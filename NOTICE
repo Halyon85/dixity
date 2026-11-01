@@ -1,0 +1,29 @@
+Dixity
+Copyright 2026 Halyon Team (https://halyon.team)
+
+Dixity was created by Halyon Team, Argentina.
+
+Under section 4(d) of the Apache License 2.0, any redistribution of Dixity or of
+software based on it must keep this NOTICE file, and the credit below must appear
+in the place where you show your own notices (for example, an "About" window or
+the documentation):
+
+    Based on Dixity by Halyon Team — https://halyon.team
+
+--------------------------------------------------------------------------------
+Dixity fue creado por Halyon Team, Argentina. Si redistribuís Dixity o un programa
+basado en él, tenés que conservar este archivo NOTICE y el crédito:
+"Basado en Dixity, de Halyon Team — https://halyon.team".
+
+Third-party material / Material de terceros:
+- Sparkle (automatic updates, bundled in published builds) — https://sparkle-project.org
+  — © Andy Matuschak and the Sparkle Project contributors, MIT License
+  (https://github.com/sparkle-project/Sparkle/blob/2.x/LICENSE).
+- FluidAudio — https://github.com/FluidInference/FluidAudio — © FluidInference,
+  Apache License 2.0 (see Vendor/FluidAudio/LICENSE). The copy in Vendor/FluidAudio is a
+  trimmed version of v0.17.7: unused modules were removed and one file was changed
+  (see Vendor/FluidAudio/LEEME.md).
+- Speech recognition models (not bundled; downloaded on first use), CC BY 4.0:
+  Parakeet TDT 0.6B v3 — NVIDIA — https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3
+  Parakeet Ultra — moondream — https://huggingface.co/moondream/parakeet-ultra
+  Core ML conversions — FluidInference — https://huggingface.co/FluidInference
