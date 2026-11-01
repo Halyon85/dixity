@@ -30,8 +30,9 @@ cualquier app. Todo se configura en el panel (clic en el ícono de la barra › 
 
 ## 3. La píldora
 
-Es la barrita que aparece mientras dictás. El punto tiene el color del modo. Con el mouse encima: ✕ cancela y
-✓ termina. Se arrastra y recuerda el lugar. Si no te escucha, lo avisa; si algo falla, queda con **Reintentar** y
+Es la barrita que aparece mientras dictás. El punto tiene el color del modo. Con el mouse encima: **⏸ pausa** y
+✓ termina (cancelar es **Esc**). En pausa el micrófono se apaga y no graba nada: **▶** sigue en el mismo dictado,
+✕ cancela y ✓ termina con todo lo grabado. Si dictabas manteniendo la tecla, al pausar podés soltarla. Se arrastra y recuerda el lugar. Si no te escucha, lo avisa; si algo falla, queda con **Reintentar** y
 suena. Estilo (clara, oscura, vidrio, cristal), tamaño y transparencia: General › Píldora.
 
 ## 4. Modos: cómo pasa en limpio (página Modos)
@@ -40,7 +41,7 @@ suena. Estilo (clara, oscura, vidrio, cristal), tamaño y transparencia: General
 - **Común**: mails, chats y notas, tal como lo dirías pero prolijo.
 - **Prompt**: ordena lo que decís como pedido para una IA (Claude, ChatGPT, Codex…). Si la ventana es de un proyecto
   de tus **Carpetas de proyectos**, usa su guía (AGENTS.md o CLAUDE.md) para escribir bien los nombres.
-- **Correo**, **Mensaje** (con uno o dos emojis si querés), **Formal** y **Traducir** (el idioma se elige en
+- **Correo**, **Mensaje** (con un emoji que acompaña lo que decís, si lo dejás prendido), **Formal** y **Traducir** (el idioma se elige en
   "Traducir a").
 - **Después de pegar**: en Prompt o Mensaje puede mandar Enter solo, para enviar sin tocar nada.
 - **Acciones rápidas**: Ordenar, Resumir y Corregir vienen listas. Se editan, se les pone atajo y se suman otras.
@@ -82,6 +83,8 @@ qué hacer:
   **cambian ahí mismo**, como si lo hubieras escrito vos (**⌘Z** lo deshace). Una caja vacía ofrece **Dictá acá**.
 - **Un texto que tenías seleccionado:** Leer en voz alta, Pasar a inglés/español, Resumir, Preguntá sobre esto. Si
   parece un error de un programa: **Arreglalo con Claude** y Explicame este error.
+- **Una palabra o un nombre seleccionado** (hasta 4 palabras): **Sumar al diccionario**, como ⌃⌥D, en el lugar de
+  Resumir o Reformular.
 - **Una imagen:** **Describir** (tu IA la mira y te dice qué hay, en un par de segundos, con la imagen chiquita arriba),
   **Sacar prompt** (un prompt en inglés para recrearla con un generador de imágenes, siempre en alta resolución;
   en la tarjeta elegís el formato —Original, 1:1, Post 4:5, Historia 9:16 o 16:9—, **Cambiar algo** por voz («que
@@ -162,7 +165,7 @@ Con la ventana del proyecto adelante (Terminal, Cursor, VS Code…), mantené �
 
 Nombres y palabras que Dixity tiene que escribir siempre bien. Para una corrección, escribí "cómo sale mal, cómo va".
 
-- Se suman a mano, con **⌃⌥D** sobre una selección o con **Importar lista**.
+- Se suman a mano, con **⌃⌥D** sobre una selección, con **Sumar al diccionario** de la Varita o con **Importar lista**.
 - **Sugeridas por Dixity**: palabras que corrigió la IA, nombres de código, las que aparecen en tus ventanas y las
   que **corregiste a mano** después de pegar un dictado. Nunca entran solas: vos tocás Agregar o Descartar.
 

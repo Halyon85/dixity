@@ -18,6 +18,7 @@ final class Varita {
         case recrearLogo, recrearBanner, maqueta, colores
         case traducir(String), resumir, reformular, corregir, copiarTexto, leerEnVozAlta
         case adonde, copiarLink, copiarTabla, queHace, dictarAca
+        case sumarPalabra                    // una palabra o un nombre seleccionado, al diccionario (como ⌃⌥D)
         case captura
         case copiarTodas, collage, preguntarTodas
         case mandar(Agente), arreglar        // pegarlo en la ventana de Claude Code o Codex; "Arreglalo con Claude"
@@ -380,6 +381,7 @@ final class Varita {
         let dictar = s("dictarAca", T("Dictá acá", "Dictate here"), "waveform", 0xF56138, .dictarAca)
         let claude = s("mandarClaude", T("Mandar a Claude", "Send to Claude"), "paperplane.fill", 0xD97757, .mandar(.claude))
         let codex = s("mandarCodex", T("Mandar a Codex", "Send to Codex"), "paperplane.fill", 0x10A37F, .mandar(.codex))
+        let sumar = s("sumarPalabra", T("Sumar al diccionario", "Add to dictionary"), "character.book.closed.fill", 0xF56138, .sumarPalabra)
         // Para texto alcanza con uno: Claude si está; si no, Codex.
         let unAgente = disponible.claude ? [claude] : disponible.codex ? [codex] : []
         var lista: [(SugerenciaVarita, Pedido)]
@@ -419,6 +421,10 @@ final class Varita {
                 default:
                     lista = [describir] + (ve ? [prompt] : []) + qr + [copiar, sacarTexto] + unAgente + [preguntar]
                 }
+            // Seleccionaste una palabra o un nombre: se ofrece sumarlo al diccionario, en el lugar de Reformular o
+            // Resumir, que con dos palabras no sirven (01/11/2026).
+            case .texto where esSeleccion(c) && c.editable && Diccionario.esCorto(Diccionario.deSeleccion(c.texto)):
+                lista = [traducir(c.texto), corregir, sumar, leer] + unAgente
             case .texto where esSeleccion(c) && c.editable, .campo where conTexto:
                 lista = [traducir(c.texto), reformular, corregir, leer] + unAgente
             case .campo:
@@ -426,6 +432,8 @@ final class Varita {
             case .texto where esSeleccion(c) && pareceError(c.texto) && disponible.claude:
                 lista = [s("arreglar", T("Arreglalo con Claude", "Fix it with Claude"), "wrench.and.screwdriver.fill", 0xD97757, .arreglar),
                          s("preguntar", T("Explicame este error", "Explain this error"), "mic.fill", 0xF56138, .preguntar), leer]
+            case .texto where esSeleccion(c) && Diccionario.esCorto(Diccionario.deSeleccion(c.texto)):
+                lista = [leer, traducir(c.texto), sumar, preguntar] + unAgente
             case .texto where esSeleccion(c):
                 lista = [leer, traducir(c.texto), resumir, preguntar] + unAgente
             case .texto:

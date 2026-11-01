@@ -56,6 +56,11 @@ struct PaginaAtajos: View {
         }
         Tarjeta(titulo: T("Mientras dictás", "While dictating")) {
             Fila(titulo: T("Cancelar", "Cancel"), detalle: T("Apretá Esc y no se escribe nada.", "Press Esc and nothing gets typed.")) { TeclaVisual(texto: "Esc") }
+            Fila(titulo: T("Pausar", "Pause"),
+                 detalle: T("Con el mouse sobre la píldora, tocá ⏸: el micrófono se apaga hasta que toques ▶, y al terminar va todo junto.",
+                            "Hover over the pill and click ⏸: the mic turns off until you click ▶, and it all comes out together at the end.")) {
+                TeclaVisual(texto: "⏸")
+            }
             Fila(titulo: T("Combinaciones comunes", "Regular key combos"),
                  detalle: T("Si mientras sostenés un atajo de solo modificadores tocás otra tecla, Dixity lo toma como combinación normal y no dicta.",
                             "If you press another key while holding a modifier-only shortcut, Dixity treats it as a normal key combo and doesn't dictate."), divisor: false) { EmptyView() }

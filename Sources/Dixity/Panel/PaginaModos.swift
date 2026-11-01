@@ -52,7 +52,8 @@ struct PaginaModos: View {
                 Selector(valor: $ajustes.datos.enviarMensaje, opciones: TeclaEnviar.allCases, nombre: \.nombre, ancho: 200)
             }
             Fila(titulo: T("Emojis en Mensaje", "Emojis in Message"),
-                 detalle: T("Con IA, suma uno o dos emojis que acompañen el tono. Nunca en temas serios.", "With AI, adds one or two emojis that fit the tone. Never on serious topics.")) {
+                 detalle: T("Con IA, cierra el mensaje con un emoji que acompañe lo que decís («Hola, ¿cómo estás? 😊»); en uno largo, hasta dos o tres. Nunca en temas serios, tristes o reclamos.",
+                            "With AI, ends the message with an emoji that fits what you said (“Hi, how are you? 😊”); in a long one, up to two or three. Never on serious or sad topics, or complaints.")) {
                 Toggle("", isOn: $ajustes.datos.emojisMensaje).toggleStyle(.switch).labelsHidden()
             }
             Fila(titulo: T("Traducir a", "Translate to"), detalle: T("El idioma del modo Traducir. Escribilo como quieras: inglés, portugués, italiano…", "The language for Translate mode. Write it however you like: English, Portuguese, Italian…"), divisor: false) {

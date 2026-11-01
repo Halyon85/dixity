@@ -48,9 +48,13 @@ import Testing
     }
 
     @Test func emojisSoloEnMensajeYSiEstanPrendidos() {
-        #expect(Prompts.formato(.mensaje, idioma: "", emojis: true).contains("emojis"))
-        #expect(!Prompts.formato(.mensaje, idioma: "", emojis: false).contains("emojis"))
-        #expect(!Prompts.formato(.correo, idioma: "", emojis: true).contains("emojis"))
+        #expect(Prompts.formato(.mensaje, idioma: "", emojis: true).contains("Emojis"))
+        // Se pide uno por mensaje (no "podés"), con ejemplo y los casos en que no va.
+        #expect(Prompts.formato(.mensaje, idioma: "", emojis: true).contains("¿cómo estás? 😊"))
+        #expect(Prompts.emojisMensaje.contains("terminá el mensaje con un emoji") && Prompts.emojisMensaje.contains("reclamo"))
+        #expect(!Prompts.formato(.mensaje, idioma: "", emojis: false).lowercased().contains("emoji"))
+        #expect(!Prompts.formato(.correo, idioma: "", emojis: true).lowercased().contains("emoji"))
+        #expect(Prompts.barrera(transcripcion: "hola cómo estás", salida: "Hola, ¿cómo estás? 😊", estilo: .mensaje) == nil)
         // Un emoji sumado no lo frena la barrera.
         #expect(Prompts.barrera(transcripcion: "dale nos vemos mañana en la plaza", salida: "Dale, nos vemos mañana en la plaza 🙌",
                                 estilo: .mensaje) == nil)

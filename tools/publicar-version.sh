@@ -36,13 +36,16 @@ ZIP="$SALIDA/Dixity-$VERSION.zip"
 DESCARGAS="https://github.com/$REPO/releases/download/v$VERSION/"
 
 # El Info.plist de la versión publicada: el de siempre más la versión, la lista y la clave. Busca sola una vez por
-# día y pregunta antes de instalar.
+# día y pregunta antes de instalar. A propósito nunca se instala sola: SUAllowsAutomaticUpdates en false saca la
+# casilla de Sparkle «instalar automáticamente en el futuro», así siempre pregunta (01/11/2026).
+# Vale igual con Developer ID.
 INFO=build/Info-publicada.plist
 cp Recursos/Info.plist "$INFO"
 PB=/usr/libexec/PlistBuddy
 $PB -c "Set :CFBundleShortVersionString $VERSION" -c "Set :CFBundleVersion $NUMERO" "$INFO"
 $PB -c "Add :SUFeedURL string $LISTA" -c "Add :SUPublicEDKey string $CLAVE_PUBLICA" \
-    -c "Add :SUEnableAutomaticChecks bool true" -c "Add :SUScheduledCheckInterval integer 86400" "$INFO"
+    -c "Add :SUEnableAutomaticChecks bool true" -c "Add :SUAllowsAutomaticUpdates bool false" \
+    -c "Add :SUScheduledCheckInterval integer 86400" "$INFO"
 
 # Firma: con Developer ID si lo tenés (la cuenta paga de Apple); si no, la firma local. Nunca con el certificado
 # "Apple Development": ese es para probar en tus Macs, no para repartir.

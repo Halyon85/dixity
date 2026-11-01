@@ -6,7 +6,7 @@ puntuado. Y con la **Varita**, sacudís el mouse, señalás cualquier cosa de la
 
 App nativa en Swift que vive en la barra de menú. Funciona **sin internet** con modelos en la Mac, o con **tu propia
 IA** (OpenAI, Anthropic, Grok, Groq, OpenRouter o cualquiera compatible con OpenAI). Sin cuenta, sin suscripción y sin
-un servidor en el medio. Se actualiza sola.
+un servidor en el medio. Busca actualizaciones todos los días.
 
 **[Read it in English](README.md)** · **[Manual](docs/MANUAL.md)** ([in English](docs/MANUAL.en.md)) ·
 **[Sitio](https://dixity.halyon.app/es/)**
@@ -22,8 +22,8 @@ un servidor en el medio. Se actualiza sola.
    pantalla** es opcional: sirve para que lea la pantalla y para que la Varita copie y lea imágenes.
 4. Elegí cómo usarla en **Proveedores**: todo en la Mac o con tus propias claves.
 
-**Actualizaciones:** Dixity se actualiza sola. Cuando sale una versión nueva, te avisa y la instala; no hace falta
-volver a bajarla.
+**Actualizaciones:** Dixity busca una versión nueva una vez por día. Cuando la hay, te avisa y la instala solo si le
+decís que sí; no hace falta volver a bajarla.
 
 También se puede compilar desde el código (ver [Compilar](#compilar)).
 

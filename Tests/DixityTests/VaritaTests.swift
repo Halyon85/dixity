@@ -339,4 +339,22 @@ import Testing
             #expect(p.joined().filter { !$0.isWhitespace }.count == raro.filter { !$0.isWhitespace }.count)
         }
     }
+
+    // MARK: 01/11 (tarde): sumar al diccionario
+
+    @Test func unaPalabraSeleccionadaSeOfreceParaElDiccionario() {
+        let ids = { (c: Senalador.Cosa) in Varita.sugerencias(para: [c], idiomaPersona: "es").map(\.0.id) }
+        // Una palabra o un nombre corto: Sumar al diccionario, en vez de Resumir (en un texto) o Reformular (en una caja).
+        let palabra = Senalador.Cosa(tipo: .texto, marco: .zero, texto: " Halyon, ")
+        #expect(ids(palabra).contains("sumarPalabra") && !ids(palabra).contains("resumir"))
+        let enCaja = Senalador.Cosa(tipo: .texto, marco: .zero, texto: "Club Nahuel", editable: true)
+        #expect(ids(enCaja).prefix(3) == ["traducir", "corregir", "sumarPalabra"])
+        // Una oración o una caja entera, no.
+        #expect(!ids(Senalador.Cosa(tipo: .texto, marco: .zero, texto: "Mañana a primera hora te mando el informe.")).contains("sumarPalabra"))
+        #expect(!ids(Senalador.Cosa(tipo: .campo, marco: CGRect(x: 0, y: 0, width: 300, height: 40), texto: "Hola", editable: true)).contains("sumarPalabra"))
+        // Lo mismo que acepta ⌃⌥D.
+        #expect(Diccionario.deSeleccion("«Dixity».") == "Dixity")
+        #expect(Diccionario.esCorto("Halyon Team") && !Diccionario.esCorto("") && !Diccionario.esCorto("uno\ndos"))
+        #expect(!Diccionario.esCorto("una frase con más de cuatro palabras"))
+    }
 }

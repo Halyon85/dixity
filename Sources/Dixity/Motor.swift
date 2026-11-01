@@ -58,6 +58,7 @@ final class Motor {
         monitor.alEvento = { [weak self] e in self?.atender(e) }
         pildora.alCancelar = { [weak self] in if self?.estado == .grabando { self?.cancelar(aviso: T("Cancelado", "Canceled")) } }
         pildora.alTerminar = { [weak self] in if self?.estado == .grabando { self?.terminar() } }
+        pildora.alPausar = { [weak self] in self?.alternarPausa() }
         pildora.alReintentar = { [weak self] in self?.reprocesarUltimo() }
         pildora.alPegar = { [weak self] in self?.pegarRespuesta() }
         pildora.alDejarRespuesta = { [weak self] in self?.soltarRespuesta() }
@@ -264,6 +265,25 @@ final class Motor {
             default: estilo.etiqueta
             }
             if elegido { pildora.modelo.cambioModo += 1 }
+        }
+    }
+
+    // ⏸ / ▶ de la píldora (la llama alPausar): pausa el dictado o lo sigue. Al pausar pasa a manos libres, así
+    // soltar la tecla no lo termina; después el atajo o el ✓ terminan con todo lo grabado y Esc cancela.
+    // Si el micrófono no vuelve (lo desconectaste en la pausa), termina con lo que ya había.
+    private func alternarPausa() {
+        guard estado == .grabando else { return }
+        let m = pildora.modelo
+        if grabador.enPausa {
+            do { try grabador.seguir() } catch { terminar(); return }
+            if ajustes.datos.sonidoAlEmpezar { Motor.sonido("Tink") }
+            withAnimation(Tema.expo) { m.enPausa = false }
+        } else {
+            grabador.pausar()
+            manosLibres = true
+            m.manosLibres = true
+            m.niveles = Array(repeating: 0, count: m.niveles.count)
+            withAnimation(Tema.expo) { m.enPausa = true; m.sinSonido = false }
         }
     }
 
@@ -550,6 +570,9 @@ final class Motor {
             Cursor.copiar(t)
             pildora.mostrarCerca(de: punto)
             pildora.mostrar(.listo(T("Texto copiado", "Text copied")), durante: 1.2)
+        case .sumarPalabra:
+            pildora.mostrarCerca(de: punto)
+            sumarAlDiccionario(c?.texto ?? "")
         case .copiarLink:
             guard let url = c?.url?.absoluteString ?? c?.texto, !url.isEmpty else { return }
             Cursor.copiar(url)
@@ -1180,12 +1203,17 @@ final class Motor {
         let ctx = Cursor.capturar(conTexto: true)
         var texto = ctx.seleccion
         if texto.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { texto = Cursor.seleccionPorCopia() }
-        texto = texto.trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
+        sumarAlDiccionario(texto)
+    }
+
+    // Lo comparten ⌃⌥D y «Sumar al diccionario» de la Varita: suma la selección y lo cuenta en la píldora.
+    private func sumarAlDiccionario(_ seleccion: String) {
+        let texto = Diccionario.deSeleccion(seleccion)
         guard !texto.isEmpty else {
             pildora.mostrar(.aviso(T("Seleccioná una palabra y apretá el atajo.", "Select a word and press the shortcut.")), durante: 2)
             return
         }
-        guard texto.count <= 40, texto.split(whereSeparator: \.isWhitespace).count <= 4, !texto.contains("\n") else {
+        guard Diccionario.esCorto(texto) else {
             pildora.mostrar(.aviso(T("Es muy largo: seleccioná una palabra o un nombre corto.", "Too long: select a word or a short name.")), durante: 2.5)
             return
         }

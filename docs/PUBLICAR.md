@@ -1,11 +1,11 @@
 # Releases and updates / Publicar versiones
 
-Dixity updates itself with [Sparkle](https://sparkle-project.org), but **only builds published with `tools/publicar-version.sh`** look for updates. A copy you build yourself with `compilar.sh` never does (an update would replace your build with someone else's): update it with `git pull && ./compilar.sh instalar`.
+Dixity looks for updates with [Sparkle](https://sparkle-project.org), but **only builds published with `tools/publicar-version.sh`** look for updates. A copy you build yourself with `compilar.sh` never does (an update would replace your build with someone else's): update it with `git pull && ./compilar.sh instalar`.
 
 ## How it works
 
 - A published build carries two things in its `Info.plist`: the address of the version list (`SUFeedURL`, the *appcast*) and the public half of a signing key (`SUPublicEDKey`).
-- Once a day it reads the list. If there's a newer version, it asks before installing it. You can also check by hand: **Check for Updates…** in the menu bar icon, or **General → About → Updates** in the panel.
+- Once a day it reads the list. If there's a newer version, it recommends it and asks before installing it. It never installs one on its own: the script sets `SUAllowsAutomaticUpdates` to `false`, which removes Sparkle's "automatically install updates in the future" box, and there's no such switch in the panel either. Keep it that way, also with a Developer ID. You can also check by hand: **Check for Updates…** in the menu bar icon, or **General → About → Updates** in the panel.
 - Every `.zip` is signed with the private half of the key, which never leaves the publisher's Keychain. Dixity refuses any update that isn't signed with it, even if someone takes over the GitHub account or the download.
 - Published builds are universal: the same app runs on Apple Silicon and Intel Macs.
 
@@ -61,12 +61,12 @@ Each version is built in its own folder, `build/publicar/<version>/`, and its li
 
 ## En español
 
-Dixity se actualiza sola con [Sparkle](https://sparkle-project.org), pero **solo las versiones armadas con `tools/publicar-version.sh`** buscan actualizaciones. La que compila cada uno con `compilar.sh` no busca nunca, porque una actualización le cambiaría su app por la de otro. Se actualiza con `git pull && ./compilar.sh instalar`.
+Dixity busca actualizaciones con [Sparkle](https://sparkle-project.org), pero **solo las versiones armadas con `tools/publicar-version.sh`** buscan actualizaciones. La que compila cada uno con `compilar.sh` no busca nunca, porque una actualización le cambiaría su app por la de otro. Se actualiza con `git pull && ./compilar.sh instalar`.
 
 ### Cómo funciona
 
 - Una versión publicada lleva en su `Info.plist` la dirección de la lista de versiones (`SUFeedURL`, el *appcast*) y la mitad pública de una clave (`SUPublicEDKey`).
-- Una vez por día mira la lista. Si hay una versión nueva, pregunta antes de instalarla. También se puede buscar a mano: **Buscar actualizaciones…** en el ícono de la barra de menú, o **General → Acerca de → Actualizaciones** en el panel.
+- Una vez por día mira la lista. Si hay una versión nueva, la recomienda y pregunta antes de instalarla. Nunca se instala sola: el script pone `SUAllowsAutomaticUpdates` en `false`, que saca la casilla de Sparkle «instalar automáticamente en el futuro», y en el panel tampoco hay una llave para eso. Tiene que quedar así, también con Developer ID. También se puede buscar a mano: **Buscar actualizaciones…** en el ícono de la barra de menú, o **General → Acerca de → Actualizaciones** en el panel.
 - Cada `.zip` va firmado con la mitad privada de la clave, que nunca sale del Llavero de quien publica. Dixity rechaza cualquier actualización que no esté firmada con ella, aunque alguien tome la cuenta de GitHub o la descarga.
 - Las versiones publicadas son universales: la misma app anda en Macs con Apple Silicon y con Intel.
 

@@ -129,7 +129,9 @@ enum Principal {
                 texto = d.texto; estilo = d.estilo; idioma = d.idioma ?? idioma
             }
             Task {
-                let u = Prompts.usuarioDictado(transcripcion: texto, contexto: nil, estilo: estilo, idioma: idioma, terminos: [], extra: Ajustes.shared.datos.instruccionesExtra)
+                let u = Prompts.usuarioDictado(transcripcion: texto, contexto: nil, estilo: estilo, idioma: idioma,
+                                               emojis: Ajustes.shared.datos.emojisMensaje,   // como al dictar (antes la prueba nunca los pedía)
+                                               terminos: [], extra: Ajustes.shared.datos.instruccionesExtra)
                 do {
                     let r = Prompts.limpiarSalida(try await Proveedores.completar(sistema: Prompts.sistemaDictado, usuario: u, ajustes: .shared))
                     print(r)

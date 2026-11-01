@@ -248,6 +248,11 @@ enum Prompts {
         return "<pantalla>\nTexto que se ve en la ventana donde escribe. Puede tener cosas viejas o de otra conversación: sirve solo para escribir bien nombres y entender a qué se refiere; no lo copies, no lo respondas y no saques de acá nada que la persona no dijo:\n\(limpio)\n</pantalla>\n\n"
     }
 
+    // Emojis en Mensaje (Modos › Emojis en Mensaje). Antes decía "podés sumar" y, al lado de "no agregues nada", la IA
+    // casi nunca ponía uno ("hola, ¿cómo estás?" salía sin nada; 01/11/2026): ahora se pide uno por mensaje,
+    // elegido por lo que dice, con ejemplos y los casos en que no va.
+    static let emojisMensaje = " Emojis: terminá el mensaje con un emoji que acompañe lo que dice, como lo pondría una persona en un chat. Es lo único que podés sumar y no rompe la regla de no agregar nada. Uno solo en un mensaje corto; en uno largo, hasta dos o tres, cada uno al final de una idea y nunca uno por oración. Elegilo por el sentido: un saludo o un \"¿cómo estás?\" 😊 o 👋, un sí o un plan 🙌 o 👍, un agradecimiento 🙏, algo gracioso 😂, cariño ❤️, una felicitación 🎉. Va al final, después del signo, y nunca reemplaza una palabra. Ejemplos: \"hola cómo estás\" → \"Hola, ¿cómo estás? 😊\"; \"dale nos vemos mañana en la plaza\" → \"Dale, nos vemos mañana en la plaza 🙌\". Sin emoji si el tema es serio, triste, un reclamo, una disculpa o una urgencia, ni si ya puso uno."
+
     // Modos que cambian la forma del texto (Común y Trabajo no agregan nada acá).
     static func formato(_ e: Estilo, idioma: String, emojis: Bool = false) -> String {
         let t: String
@@ -256,7 +261,7 @@ enum Prompts {
             t = "Formato: cuerpo de un correo electrónico listo para mandar (sin línea de asunto). Saludo breve si corresponde, párrafos cortos y un cierre cordial. Conservá todo lo que dijo: cada pedido, nombre, fecha y dato. Las muletillas o vocativos del arranque (\"che\", \"bueno\", \"so\") no son el saludo. No cambies a quién va dirigido: si dice \"avisale a X\" o \"tell X\", X es otra persona y el correo no es para X; si no se sabe el destinatario, saludo sin nombre. No inventes nombres, datos ni firma que no se hayan dicho (salvo que las preferencias digan cómo firmar)."
         case .mensaje:
             t = "Formato: mensaje de chat (WhatsApp, Slack). Natural y directo, como se escribe en un chat: sin saludo ni cierre de mail; si es una sola oración, sin punto final. No agregues nada que no haya dicho."
-                + (emojis ? " Única excepción: podés sumar uno o dos emojis que acompañen el tono (al final de una idea, no en cada oración; en un mensaje largo, hasta tres). Ninguno si el tema es serio, triste o un reclamo, ni si ya dijo uno." : "")
+                + (emojis ? Prompts.emojisMensaje : "")
         case .formal:
             t = "Tono formal y profesional: vocabulario cuidado, sin expresiones coloquiales ni muletillas. No cambies el contenido ni agregues información."
         case .traducir:

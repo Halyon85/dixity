@@ -47,6 +47,15 @@ final class Diccionario: ObservableObject {
         return n
     }
 
+    /// Lo seleccionado, listo para sumarlo: sin espacios ni puntuación en las puntas ("Dixity," → "Dixity").
+    static func deSeleccion(_ s: String) -> String { s.trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters)) }
+
+    /// Una palabra o un nombre corto (hasta 4 palabras y 40 letras, en un renglón): lo que se suma desde una selección.
+    /// Lo usan ⌃⌥D y la Varita, que con esto decide si ofrece «Sumar al diccionario».
+    static func esCorto(_ t: String) -> Bool {
+        !t.isEmpty && t.count <= 40 && t.split(whereSeparator: \.isWhitespace).count <= 4 && !t.contains(where: \.isNewline)
+    }
+
     static func limpiar(_ s: String) -> String {
         var t = s.trimmingCharacters(in: .whitespacesAndNewlines)
         while t.hasPrefix("#") { t.removeFirst() }

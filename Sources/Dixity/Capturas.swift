@@ -32,7 +32,7 @@ enum Capturas {
                 ("trabajo", .grabando, .dictado), ("sinsonido", .grabando, .dictado), ("modo", .grabando, .dictado), ("modoelegido", .modo("Correo"), .dictado),
                 ("sincampo", .sinCampo(T("Quiero que en el panel de historial agregues un botón para exportar los dictados del día como .txt.",
                                          "Add a button to the history panel that exports today's dictations as a .txt file.")), .dictado),
-                ("preguntar", .grabando, .pregunta),
+                ("preguntar", .grabando, .pregunta), ("encima", .grabando, .dictado), ("pausa", .grabando, .dictado),
                 ("agente", .respuesta(T("Motor.swift une todo: escucha el atajo, graba, pasa la voz a texto, la limpia con la IA y la pega. Para que Preguntar le hable a Claude, sumaría un paso en `procesar` que detecte «Claude, …» y le pase el pedido a `Agentes.correr`.",
                                         "Motor.swift ties it all together: it listens for the shortcut, records, transcribes, cleans up with AI and pastes. To let Ask talk to Claude, I'd add a step in `procesar` that detects “Claude, …” and hands the request to `Agentes.correr`.")), .pregunta),
                 ("respuesta", .respuesta(T("¡Hola Caro! Sí, el jueves puedo. ¿Te queda bien a las 10 en la oficina? Si preferís por videollamada, avisame y te paso el link.",
@@ -42,7 +42,7 @@ enum Capturas {
             for (n, e, m) in estados {
                 modelo.hacelo = n == "agente" ? T("Hacelo con Claude", "Have Claude do it") : nil
                 modelo.tituloRespuesta = n == "agente" ? "Claude" : ""
-                modelo.estado = e; modelo.modo = m; modelo.trabajo = n == "trabajo"; modelo.sinSonido = n == "sinsonido"; modelo.etiqueta = n == "modo" ? Estilo.correo.etiqueta : nil; modelo.colorModo = n == "trabajo" ? Color(hex: 0x8B5CF6) : (n == "modo" || n == "modoelegido") ? Color(hex: 0x3B82F6) : Tema.acento
+                modelo.estado = e; modelo.modo = m; modelo.trabajo = n == "trabajo"; modelo.sinSonido = n == "sinsonido"; modelo.hover = n == "encima"; modelo.enPausa = n == "pausa"; modelo.etiqueta = n == "modo" ? Estilo.correo.etiqueta : nil; modelo.colorModo = n == "trabajo" ? Color(hex: 0x8B5CF6) : (n == "modo" || n == "modoelegido") ? Color(hex: 0x3B82F6) : Tema.acento
                 guardar(VistaPildora(modelo: modelo, ajustes: .shared, copiar: {}, cerrar: {}).background(Color.gray.opacity(0.25)), tam: NSSize(width: 520, height: n == "respuesta" || n == "agente" ? 300 : 190),
                         apariencia: apariencia, en: url.appendingPathComponent("pildora-\(n)-\(nombre).png"))
             }

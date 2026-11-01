@@ -64,8 +64,8 @@ struct PaginaVarita: View {
                    detalle: T("Pasar a inglés o español, Reformular y Corregir, que lo cambian ahí mismo (⌘Z deshace). Vacía: Dictá acá.",
                               "Translate, Rephrase and Fix, changed right there (⌘Z undoes). Empty: Dictate here."))
             Ofrece(icono: "text.quote", color: 0x0EA5E9, titulo: T("Un texto seleccionado", "Selected text"),
-                   detalle: T("Leer en voz alta, Pasar a inglés o español, Resumir y Preguntá sobre esto. Si parece un error: Arreglalo con Claude.",
-                              "Read aloud, Translate, Summarize and Ask about this. If it looks like an error: Fix it with Claude."))
+                   detalle: T("Leer en voz alta, Pasar a inglés o español, Resumir y Preguntá sobre esto. Una palabra o un nombre: Sumar al diccionario. Si parece un error: Arreglalo con Claude.",
+                              "Read aloud, Translate, Summarize and Ask about this. A word or a name: Add to dictionary. If it looks like an error: Fix it with Claude."))
             Ofrece(icono: "photo", color: 0x14B8A6, titulo: T("Una imagen", "An image"),
                    detalle: T("Copiar imagen, Leer el QR (si tiene uno), Mandar a Claude o a Codex, Sacar el texto y Preguntale a Claude.",
                               "Copy image, Read the QR (if it has one), Send to Claude or Codex, Grab the text and Ask Claude."))

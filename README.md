@@ -6,7 +6,7 @@ And with **Wonder**, shake the mouse, point at anything on screen and pick what 
 
 Native Swift menu-bar app. Works **fully offline** with on-device models, or with **your own AI**
 (OpenAI, Anthropic, Grok, Groq, OpenRouter or anything OpenAI-compatible). No account, no subscription,
-no server in between. Updates itself.
+no server in between. Checks for updates every day.
 
 **[Leelo en español](README.es.md)** · **[Manual](docs/MANUAL.en.md)** ([en español](docs/MANUAL.md)) ·
 **[Website](https://dixity.halyon.app)**
@@ -24,8 +24,8 @@ no server in between. Updates itself.
    optional: it lets Dixity read the screen and lets Wonder copy and read images.
 4. Pick how you want to use it in **Providers**: everything on your Mac, or with your own keys.
 
-**Updates:** Dixity updates itself. When a new version is out, it lets you know and installs it; there's no need to
-download it again.
+**Updates:** Dixity checks for a new version once a day. When there is one, it lets you know and installs it only if
+you say yes; there's no need to download it again.
 
 You can also build it from source (see [Build](#build)).
 

@@ -22,6 +22,7 @@ final class ModeloPildora: ObservableObject {
     @Published var copiado = false
     @Published var hover = false
     @Published var sinSonido = false     // a los 2 s de grabar sin que llegue voz: "No te escucho"
+    @Published var enPausa = false       // tocaste ⏸: el micrófono está apagado hasta que toques ▶
     @Published var puedePegar = true     // la respuesta tiene un campo donde pegarse (si no, solo Copiar)
     @Published var tituloRespuesta = ""  // "Respuesta", o "Claude"/"Codex" si respondió un agente
     @Published var hacelo: String?       // "Hacelo con Claude": solo en respuestas de un agente
@@ -65,11 +66,12 @@ final class ModeloPildora: ObservableObject {
     func empezarEscucha() {
         huboSonido = false
         sinSonido = false
+        enPausa = false
     }
 
-    // Si a los 2 s no llegó voz, avisa (micrófono equivocado o muteado).
+    // Si a los 2 s no llegó voz, avisa (micrófono equivocado o muteado). En pausa no llega nada a propósito.
     func revisarSonido() {
-        guard estado == .grabando, !huboSonido else { return }
+        guard estado == .grabando, !huboSonido, !enPausa else { return }
         withAnimation(Tema.expo) { sinSonido = true }
     }
 }
@@ -82,6 +84,7 @@ final class PanelPildora: NSObject, NSWindowDelegate {
     private var ubicando = false
     var alCancelar: (() -> Void)?
     var alTerminar: (() -> Void)?
+    var alPausar: (() -> Void)?           // ⏸ / ▶ mientras grabás: pausa o sigue (lo decide el Motor)
     var alReintentar: (() -> Void)?
     var alPegar: (() -> Void)?
     var alHacelo: (() -> Void)?
@@ -109,6 +112,7 @@ final class PanelPildora: NSObject, NSWindowDelegate {
                                                          arrastrar: { [weak self] fin in self?.arrastrar(fin: fin) },
                                                          cancelarAhora: { [weak self] in self?.alCancelar?() },
                                                          terminarAhora: { [weak self] in self?.alTerminar?() },
+                                                         pausarAhora: { [weak self] in self?.alPausar?() },
                                                          reintentar: { [weak self] in self?.alReintentar?() },
                                                          pegar: { [weak self] in self?.alPegar?() },
                                                          hacelo: { [weak self] in self?.alHacelo?() }))
@@ -118,7 +122,9 @@ final class PanelPildora: NSObject, NSWindowDelegate {
             if case .sinCampo = m.estado { return punto.y < m.marcoPildora.minY + 34 && punto.x < m.marcoPildora.maxX - 40 }
             if m.estado.esRespuesta { return punto.y < m.marcoPildora.minY + 34 && punto.x < m.marcoPildora.maxX - 40 }
             if case .fallo = m.estado { return punto.x < m.marcoPildora.maxX - 140 }   // a la derecha, los botones
-            if m.hover && m.estado == .grabando { return punto.x > m.marcoPildora.minX + 44 && punto.x < m.marcoPildora.maxX - 44 }
+            if (m.hover || m.enPausa) && m.estado == .grabando {   // a los costados, los botones (en pausa, ✕ y ✓ a la derecha)
+                return punto.x > m.marcoPildora.minX + 44 && punto.x < m.marcoPildora.maxX - (m.enPausa ? 80 : 44)
+            }
             return true
         }
         vista.alMover = { [weak self] punto in
@@ -261,6 +267,7 @@ struct VistaPildora: View {
     var arrastrar: (Bool) -> Void = { _ in }
     var cancelarAhora: () -> Void = {}
     var terminarAhora: () -> Void = {}
+    var pausarAhora: () -> Void = {}
     var reintentar: () -> Void = {}
     var pegar: () -> Void = {}
     var hacelo: () -> Void = {}
@@ -340,17 +347,26 @@ struct VistaPildora: View {
         switch modelo.estado {
         case .grabando:
             HStack(spacing: 12) {
-                // Con el mouse encima: ✕ cancela y ✓ termina.
-                if modelo.hover {
-                    BotonRedondo(icono: "xmark", relleno: colorTexto.opacity(0.12), tinta: colorTexto, accion: cancelarAhora)
-                        .help(T("Cancelar", "Cancel"))
+                // Con el mouse encima: ⏸ pausa y ✓ termina (cancelar es Esc; hasta el 01/11 acá había una ✕).
+                // En pausa, sin que haga falta el mouse encima: ▶ sigue, ✕ cancela y ✓ termina con lo grabado.
+                if modelo.enPausa {
+                    BotonRedondo(icono: "play.fill", relleno: colorTexto.opacity(0.12), tinta: colorTexto, accion: pausarAhora)
+                        .help(T("Seguir grabando", "Keep recording"))
+                        .transition(.scale.combined(with: .opacity))
+                } else if modelo.hover {
+                    BotonRedondo(icono: "pause.fill", relleno: colorTexto.opacity(0.12), tinta: colorTexto, accion: pausarAhora)
+                        .help(T("Pausar", "Pause"))
                         .transition(.scale.combined(with: .opacity))
                 } else {
                     // Coral: Común. Violeta: modo Trabajo (prompt para Claude).
                     PuntoGrabando(color: modelo.modo == .dictado ? modelo.colorModo : Tema.acento)
                         .transition(.scale.combined(with: .opacity))
                 }
-                if modelo.sinSonido && !modelo.hover {
+                if modelo.enPausa {
+                    Text(T("En pausa", "Paused")).font(.system(size: 13, weight: .semibold)).opacity(0.65)
+                        .frame(minWidth: 70)
+                        .transition(.opacity)
+                } else if modelo.sinSonido && !modelo.hover {
                     // En el color de aviso y con ícono: antes era texto gris y pasaba de largo (30/10/2026).
                     HStack(spacing: 5) {
                         Image(systemName: "mic.slash.fill").font(.system(size: 12, weight: .semibold))
@@ -361,7 +377,7 @@ struct VistaPildora: View {
                 } else {
                     Puntos(niveles: modelo.niveles)
                 }
-                if let e = modelo.etiqueta, !modelo.hover {
+                if let e = modelo.etiqueta, !modelo.hover, !modelo.enPausa {
                     Text(e).font(.system(size: 12, weight: .semibold))
                         .padding(.horizontal, 8).frame(height: 22)
                         .background(Capsule().fill(modelo.colorModo.opacity(0.18)))
@@ -370,7 +386,7 @@ struct VistaPildora: View {
                         .transition(.asymmetric(insertion: .scale(scale: 1.35).combined(with: .opacity), removal: .opacity))
                 }
                 // Preguntar: sobre qué va a trabajar ("Sobre 34 palabras", "Sin selección · Safari").
-                if modelo.modo == .pregunta, let s = modelo.sobre, !modelo.hover, !modelo.sinSonido {
+                if modelo.modo == .pregunta, let s = modelo.sobre, !modelo.hover, !modelo.sinSonido, !modelo.enPausa {
                     HStack(spacing: 4) {
                         Image(systemName: s.hasPrefix(T("Sobre", "About")) ? "text.cursor" : "eye").font(.system(size: 10, weight: .semibold))
                         Text(s).font(.system(size: 11.5, weight: .semibold)).lineLimit(1)
@@ -381,7 +397,12 @@ struct VistaPildora: View {
                     .frame(maxWidth: 200)
                     .transition(.scale(scale: 0.9).combined(with: .opacity))
                 }
-                if modelo.hover {
+                if modelo.enPausa {
+                    BotonRedondo(icono: "xmark", relleno: .clear, tinta: colorTexto.opacity(0.6), accion: cancelarAhora)
+                        .help(T("Cancelar", "Cancel"))
+                        .transition(.scale.combined(with: .opacity))
+                }
+                if modelo.hover || modelo.enPausa {
                     BotonRedondo(icono: "checkmark", relleno: colorTexto, tinta: esquemaPildora == .dark ? .black : .white, accion: terminarAhora)
                         .help(T("Terminar y escribir", "Finish and type"))
                         .transition(.scale.combined(with: .opacity))

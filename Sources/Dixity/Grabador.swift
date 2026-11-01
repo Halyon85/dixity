@@ -10,6 +10,7 @@ final class Grabador {
     private var muestras = Data()
     private let cola = DispatchQueue(label: "dixity.grabador")
     private(set) var grabando = false
+    private(set) var enPausa = false   // la píldora tiene ⏸: el micrófono queda apagado hasta que sigas
     private(set) var dispositivo: AudioDeviceID = 0   // con qué micrófono está grabando (para --probar-microfono)
     var alNivel: ((Float) -> Void)?
     static let maximoSegundos: Double = 600
@@ -78,9 +79,25 @@ final class Grabador {
         DispatchQueue.main.async { self.alNivel?(nivel) }
     }
 
+    /// Pausa (el ⏸ de la píldora, lo llama el Motor): apaga el micrófono de verdad (macOS saca la luz naranja) y no
+    /// graba nada hasta `seguir`. Lo grabado se queda y al terminar va todo junto, sin el rato en pausa.
+    func pausar() {
+        guard grabando, !enPausa else { return }
+        motor?.pause()
+        enPausa = true
+    }
+
+    /// Vuelve a prender el micrófono. Si no puede (lo desconectaste), tira el error y el Motor termina con lo grabado.
+    func seguir() throws {
+        guard grabando, enPausa, let motor else { return }
+        try motor.start()
+        enPausa = false
+    }
+
     // Devuelve el WAV y la duración en segundos.
     func terminar() -> (wav: Data, segundos: Double) {
         guard grabando else { return (Data(), 0) }
+        enPausa = false
         motor?.inputNode.removeTap(onBus: 0)
         motor?.stop()
         motor = nil
