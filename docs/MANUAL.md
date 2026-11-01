@@ -25,7 +25,7 @@ cualquier app. Todo se configura en el panel (clic en el ícono de la barra › 
 | **⌃⌥R** | **Volver a procesar** el último dictado (si salió mal o falló la IA). |
 | **⌃⌥D** | **Sumar al diccionario** la palabra que tenés seleccionada. |
 | **⌃⌥O / ⌃⌥S** | Acciones rápidas sobre una selección: **Ordenar** y **Resumir** (sin hablar). |
-| **⌃⌥1…6** | Dictar en un modo puntual. **⌃⌥0** vuelve a Automático. Mientras grabás, 1…6 cambian el modo. |
+| **⌃⌥1…7** | Elige el modo de tus dictados, y queda hasta que elijas otro. **⌃⌥0** vuelve a Automático. Mientras grabás, 1…7 también lo cambian (y queda para los próximos). |
 | **Sacudir el mouse** | Prende la **Varita** (ver 5 bis). Todo lo de la Varita se ajusta en su página del panel, **Varita**. |
 
 ## 3. La píldora
@@ -43,6 +43,13 @@ suena. Estilo (clara, oscura, vidrio, cristal), tamaño y transparencia: General
   de tus **Carpetas de proyectos**, usa su guía (AGENTS.md o CLAUDE.md) para escribir bien los nombres.
 - **Correo**, **Mensaje** (con un emoji que acompaña lo que decís, si lo dejás prendido), **Formal** y **Traducir** (el idioma se elige en
   "Traducir a").
+- **Cifras** (planillas y facturas): lo que decís con números pasa a cifras, en la Mac y sin IA, con el formato de tu
+  país. «Un millón doscientos» → 1.000.200, «mil ciento cincuenta con treinta y cinco» → 1150,35, «dólares mil
+  doscientos» → US$ 1.200,00, «veinte por ciento» → 20 %, «CUIT 20 12345678 6» → 20-12345678-6, también dicho de
+  a pares («CUIT veinte, doce, treinta y cuatro…»), y avisa si el último número no da. Entiende español e inglés. En una planilla (Excel, Numbers, Google Sheets, LibreOffice u OpenOffice)
+  pega el número solo, para que se pueda sumar; en lo demás, con miles y el signo de la moneda. En Automático se elige
+  solo en las planillas y en los programas de facturación de la lista; si no, con su número (⌃⌥7). Coma o punto para
+  los decimales: Modos › Cifras.
 - **Después de pegar**: en Prompt o Mensaje puede mandar Enter solo, para enviar sin tocar nada.
 - **Acciones rápidas**: Ordenar, Resumir y Corregir vienen listas. Se editan, se les pone atajo y se suman otras.
 
@@ -97,8 +104,11 @@ qué hacer:
   si está.
 - **Un texto:** Pasar a inglés/español, Leer en voz alta, Resumir, Mandar a Claude, Copiar texto.
 - **Un link:** ¿A dónde lleva?, Copiar link. **Una tabla:** Copiar como planilla.
-- **Siempre, al final:** Modo captura: arrastrás un recuadro con la Varita y lo recortado queda elegido, con las
-  mismas opciones que una imagen (también se hace directo con **⌥ + arrastrar**). Lo que usa IA solo aparece si tenés una configurada; Claude y Codex, solo si
+- **Siempre, al final:** **Modo captura**: arrastrás un recuadro con la Varita (también directo con **⌥ + arrastrar**)
+  y, al soltar, la foto ya queda copiada, como la captura de macOS. La cajita ofrece lo que se puede hacer con ella,
+  como con una imagen. Un clic suelto no lo cancela, y **Esc** apaga la Varita de una vez, tanto mientras dibujás como
+  con el recorte ya hecho. Si otra app tiene una contraseña activa, macOS no deja sacar fotos de
+  la pantalla y la Varita lo avisa. Lo que usa IA solo aparece si tenés una configurada; Claude y Codex, solo si
   están en tu Mac.
 - **Mandar a Claude / Codex** pega lo elegido en su ventana abierta (la terminal con Claude Code, la app de Claude o
   la de ChatGPT/Codex), con la página de donde viene, y empieza a escucharte para que le digas qué querés («quiero

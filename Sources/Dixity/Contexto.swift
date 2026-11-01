@@ -242,7 +242,25 @@ enum Cursor {
     static func copiarImagenes(_ imagenes: [NSImage]) {
         guard !imagenes.isEmpty else { return }
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.writeObjects(imagenes)
+        // PNG con la densidad de la pantalla (144 ppp en una Retina), como las capturas de macOS: las apps que la leen
+        // la pegan a su tamaño de verdad y no al doble. Además el TIFF de siempre.
+        let items = imagenes.map { img -> NSPasteboardItem in
+            let item = NSPasteboardItem()
+            if let png = Cursor.png(img) { item.setData(png, forType: .png) }
+            if let tiff = img.tiffRepresentation { item.setData(tiff, forType: .tiff) }
+            return item
+        }
+        NSPasteboard.general.writeObjects(items)
+    }
+
+    /// Una imagen en PNG con sus píxeles por pulgada (72 × los píxeles por punto): 2136 px de 1068 puntos van a 144 ppp.
+    static func png(_ img: NSImage) -> Data? {
+        guard let cg = img.cgImage(forProposedRect: nil, context: nil, hints: nil), img.size.width > 0 else { return nil }
+        let ppp = 72 * Double(cg.width) / Double(img.size.width)
+        let datos = NSMutableData()
+        guard let destino = CGImageDestinationCreateWithData(datos, "public.png" as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(destino, cg, [kCGImagePropertyDPIWidth: ppp, kCGImagePropertyDPIHeight: ppp] as CFDictionary)
+        return CGImageDestinationFinalize(destino) ? datos as Data : nil
     }
 
     static func enviar(_ t: TeclaEnviar) {

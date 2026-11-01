@@ -40,7 +40,7 @@ enum Pantalla {
     /// a tamaño completo de una imagen grande ocupaba decenas de MB).
     static func recorte(_ marco: CGRect, maxPixeles: CGFloat? = nil) async -> CGImage? {
         guard permitido, !IsSecureEventInputEnabled(), marco.width >= 2, marco.height >= 2,
-              let pantalla = NSScreen.screens.first(where: { $0.frame.intersects(marco) }),
+              let pantalla = pantalla(de: marco, en: NSScreen.screens.map(\.frame)).map({ NSScreen.screens[$0] }),
               let numero = pantalla.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,
               let contenido = try? await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true),
               let display = contenido.displays.first(where: { $0.displayID == numero }) else { return nil }
@@ -58,6 +58,27 @@ enum Pantalla {
         conf.showsCursor = false
         conf.capturesAudio = false
         return try? await SCScreenshotManager.captureImage(contentFilter: filtro, configuration: conf)
+    }
+
+    /// La pantalla donde queda la mayor parte de `marco` (con dos pantallas, un recuadro que toca las dos se saca de
+    /// la que tiene más; antes, de la primera de la lista). Nil si no toca ninguna.
+    static func pantalla(de marco: CGRect, en pantallas: [CGRect]) -> Int? {
+        let areas = pantallas.map { p -> CGFloat in let i = marco.intersection(p); return i.isNull ? 0 : i.width * i.height }
+        guard let mayor = areas.max(), mayor > 0 else { return nil }
+        return areas.firstIndex(of: mayor)
+    }
+
+    /// Por qué `recorte` no sacó la foto, para el aviso («Para copiar imágenes…»). Con una contraseña activa en otra
+    /// app (un campo de contraseña, la Terminal con «Entrada de teclado segura») macOS no deja sacar fotos de la
+    /// pantalla: antes el aviso decía que faltaba el permiso aunque estuviera dado (01/11/2026).
+    static var hayContrasena: Bool { IsSecureEventInputEnabled() }
+
+    static func porQueNo(_ es: String, _ en: String, contrasena: Bool = hayContrasena) -> String {
+        if permitido && contrasena {
+            return T("Hay una contraseña activa en otra app y macOS no deja sacar fotos de la pantalla mientras tanto. Cerrá ese campo y probá de nuevo.",
+                     "A password field is active in another app, and macOS blocks screen pictures until it closes. Close it and try again.")
+        }
+        return T("Para \(es) falta el permiso de Grabación de pantalla (General › Permisos).", "To \(en), allow Screen Recording (General › Permissions).")
     }
 
     /// Una imagen lista para mandar a la IA: JPEG de hasta 1280 px del lado largo (más grande no la ve mejor y tarda

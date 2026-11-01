@@ -357,4 +357,50 @@ import Testing
         #expect(Diccionario.esCorto("Halyon Team") && !Diccionario.esCorto("") && !Diccionario.esCorto("uno\ndos"))
         #expect(!Diccionario.esCorto("una frase con más de cuatro palabras"))
     }
+
+    // MARK: 01/11 (noche): el modo captura
+
+    @Test func modoCapturaEsLaUnicaFormaDeCapturar() {
+        // «Sacar captura» sobre lo marcado se sacó (01/11/2026): se recorta con Modo captura, siempre último.
+        let marco = CGRect(x: 100, y: 100, width: 600, height: 300)
+        for t in [Senalador.Tipo.seccion, .ventana, .banner, .logo, .imagen, .video, .recorte] {
+            let ids = Varita.sugerencias(para: [Senalador.Cosa(tipo: t, marco: marco)], idiomaPersona: "es").map(\.0.id)
+            #expect(ids.last == "captura" && !ids.contains("capturar") && ids.count <= 6)
+        }
+        #expect(Varita.sugerencias(para: [], idiomaPersona: "es").map(\.0.id) == ["captura"])
+    }
+
+    @Test func elRecorteSaleDeLaPantallaConMasSuperficie() {
+        // Las dos pantallas de la Mac del 01/11: un monitor principal y la de la Mac a la derecha, un poco más abajo.
+        let pantallas = [CGRect(x: 0, y: 0, width: 1700, height: 956), CGRect(x: 1700, y: -60, width: 1280, height: 832)]
+        #expect(Pantalla.pantalla(de: CGRect(x: 1650, y: 100, width: 400, height: 200), en: pantallas) == 1)   // casi toda en la de la Mac
+        #expect(Pantalla.pantalla(de: CGRect(x: 1500, y: 100, width: 300, height: 200), en: pantallas) == 0)
+        #expect(Pantalla.pantalla(de: CGRect(x: 2000, y: -50, width: 100, height: 100), en: pantallas) == 1)   // abajo de la principal
+        #expect(Pantalla.pantalla(de: CGRect(x: 5000, y: 0, width: 10, height: 10), en: pantallas) == nil)
+    }
+
+    @Test func elAvisoDiceLaCausaDeVerdad() {
+        #expect(Pantalla.porQueNo("copiar imágenes", "copy images", contrasena: false).contains("Grabación de pantalla"))
+        // Con el permiso dado y una contraseña activa en otra app, no se le echa la culpa al permiso.
+        if Pantalla.permitido {
+            #expect(Pantalla.porQueNo("copiar imágenes", "copy images", contrasena: true).contains("contraseña activa"))
+        }
+    }
+
+    @Test func elPuntoDelEventoPasaAAppKit() {
+        // La pantalla principal mide 956 de alto: arriba a la izquierda (0, 0) es (0, 956) en AppKit.
+        #expect(Varita.enAppKit(CGPoint(x: 0, y: 0), alto: 956) == CGPoint(x: 0, y: 956))
+        #expect(Varita.enAppKit(CGPoint(x: 1800, y: 900), alto: 956) == CGPoint(x: 1800, y: 56))   // en la de la Mac
+    }
+
+    @Test func laCapturaSeCopiaASuTamanoDeVerdad() throws {
+        // 200 × 100 píxeles de una pantalla Retina son 100 × 50 puntos: el PNG va a 144 ppp, como las capturas de macOS.
+        let ctx = try #require(CGContext(data: nil, width: 200, height: 100, bitsPerComponent: 8, bytesPerRow: 800,
+                                         space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        let img = NSImage(cgImage: try #require(ctx.makeImage()), size: NSSize(width: 100, height: 50))
+        let png = try #require(Cursor.png(img))
+        let fuente = try #require(CGImageSourceCreateWithData(png as CFData, nil))
+        let props = try #require(CGImageSourceCopyPropertiesAtIndex(fuente, 0, nil) as? [CFString: Any])
+        #expect((props[kCGImagePropertyDPIWidth] as? Double).map { abs($0 - 144) < 1 } == true)
+    }
 }

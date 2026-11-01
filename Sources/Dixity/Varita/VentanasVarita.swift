@@ -57,6 +57,7 @@ final class ModeloBorde: ObservableObject {
     @Published var visible = false
     @Published var elegido = false     // las marcas de lo elegido: borde lleno, sin etiqueta
     @Published var pensando = false
+    @Published var nitido = false      // el recuadro del modo captura: filo limpio, sin el brillo que se veía como rebaba
 }
 
 struct VistaBorde: View {
@@ -66,14 +67,14 @@ struct VistaBorde: View {
     static let celeste = Color(hex: 0x9EEBFF), azul = Color(hex: 0x4D8CF7), lavanda = Color(hex: 0xB3ADFF)
 
     var body: some View {
-        let forma = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        let forma = RoundedRectangle(cornerRadius: modelo.nitido ? 3 : 12, style: .continuous)   // el recorte, casi recto
         let degradado = LinearGradient(colors: [Self.celeste, Self.azul, Self.lavanda], startPoint: .topLeading, endPoint: .bottomTrailing)
         ZStack(alignment: .topLeading) {
             forma
-                .strokeBorder(degradado, lineWidth: modelo.elegido ? 2.5 : 2)
-                .background(forma.fill(Self.azul.opacity(modelo.elegido ? 0.08 : 0)))
-                .shadow(color: Self.azul.opacity(0.5), radius: 10)
-                .shadow(color: Self.lavanda.opacity(0.3), radius: 18)
+                .strokeBorder(degradado, lineWidth: modelo.nitido ? 1.5 : modelo.elegido ? 2.5 : 2)
+                .background(forma.fill(Self.azul.opacity(modelo.nitido ? 0.06 : modelo.elegido ? 0.08 : 0)))
+                .shadow(color: Self.azul.opacity(modelo.nitido ? 0 : 0.5), radius: 10)
+                .shadow(color: Self.lavanda.opacity(modelo.nitido ? 0 : 0.3), radius: 18)
                 .overlay {
                     if modelo.pensando { BordeGirando(forma: forma, color: Self.celeste) }
                 }
@@ -159,7 +160,9 @@ struct VistaCajita: View {
                     }
                     .contentShape(Rectangle())
                     .onTapGesture { modelo.alElegir(s) }
-                    .onHover { if $0 { withAnimation(.spring(response: 0.25, dampingFraction: 0.86)) { modelo.marcada = i } } }
+                    // Sin rebote: con el resorte la marca se pasaba y volvía al ir de una opción a otra, y la cajita
+                    // parecía temblar (01/11/2026).
+                    .onHover { if $0, modelo.marcada != i { withAnimation(.easeOut(duration: 0.12)) { modelo.marcada = i } } }
                 }
             }
             .padding(.horizontal, 5)

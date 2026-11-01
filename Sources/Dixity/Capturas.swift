@@ -150,11 +150,18 @@ enum Capturas {
             guardar(VistaCajita(modelo: m).padding(20).background(Tema.dinamico(0xFFFFFF, 0x111111)), tam: NSSize(width: 330, height: 420),
                     apariencia: apariencia, en: url.appendingPathComponent("varita-\(n)-\(nombre).png"))
         }
+        // Mientras dibujás el recuadro del modo captura: solo la ayuda, sin opciones (01/11/2026).
+        let dibujando = ModeloCajita()
+        dibujando.titulo = T("Arrastrá un recuadro", "Drag a box"); dibujando.icono = "crop"
+        dibujando.pie = T("Esc cancela", "Esc cancels"); dibujando.visible = true
+        guardar(VistaCajita(modelo: dibujando).padding(20).background(Tema.dinamico(0xFFFFFF, 0x111111)), tam: NSSize(width: 330, height: 160),
+                apariencia: apariencia, en: url.appendingPathComponent("varita-recortar-\(nombre).png"))
         // El borde al agrandar (una sección, escalón 2 de 4) y al recortar un recuadro (con su medida).
         for (n, etiqueta, elegido) in [("borde-seccion", T("Sección · 2/4", "Section · 2/4"), false), ("borde-recorte", "640 × 360", false)] {
             let m = ModeloBorde()
             m.etiqueta = etiqueta
             m.elegido = elegido
+            m.nitido = n == "borde-recorte"
             m.visible = true
             let fondo = Image(nsImage: fotoDeMuestra()).resizable().aspectRatio(contentMode: .fill).frame(width: 420, height: 240).clipped()
             guardar(fondo.overlay(VistaBorde(modelo: m).padding(30)), tam: NSSize(width: 420, height: 240),

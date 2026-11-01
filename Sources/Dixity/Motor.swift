@@ -70,6 +70,7 @@ final class Motor {
         varita.alPedir = { [weak self] p, cosas, punto in self?.pedidoVarita(p, cosas, en: punto) }
         varita.alSeleccionar = { [weak self] in self?.leerSeleccionVarita() }
         varita.alEntrarEnCaja = { [weak self] in self?.monitor.menuEscribiendo = true }
+        varita.alDejarCaja = { [weak self] in self?.monitor.menuEscribiendo = false }
         varita.alApagar = { [weak self] in
             guard let self else { return }
             self.programarDevolucionDeMemoria()   // las fotos de lo que señalaste y lo que usó Vision vuelven a la Mac
@@ -240,10 +241,12 @@ final class Motor {
         if d.proveedorIA != .ninguno && d.proveedorIA.urlBase != d.proveedorVoz.urlBase { Proveedores.precalentar(ajustes.urlIA) }
     }
 
-    // Atajo de modo: nunca empieza a grabar. Sin dictado, deja elegido ese modo para los próximos (como el menú) y lo
-    // muestra en la píldora un momento; grabando, cambia el modo de ese dictado.
+    // Atajo de modo: nunca empieza a grabar. Deja elegido ese modo para los próximos dictados, hasta que elijas otro
+    // (o 0, Automático), y lo muestra en la píldora; grabando, además cambia el de este dictado. Antes, elegido
+    // mientras grababas valía solo para ese dictado y el próximo volvía a Automático (01/11/2026).
     private func elegirModo(_ e: Estilo) {
         if estado == .grabando && accion == .dictar {
+            ajustes.datos.estilo = e
             estilo = e == .automatico ? ajustes.estiloPara(contexto) : e
             mostrarModo(elegido: true)
         } else if estado == .libre {
@@ -387,6 +390,12 @@ final class Motor {
                         self.mostrarRespuesta(nueva)
                     } else {
                         self.entregar(r.texto, contexto: pedido.contexto, registro: r.registro)
+                        // Cifras: un CUIT con el dígito verificador que no da (lo típico de un número mal oído).
+                        if r.registro.estilo == Estilo.cifras.corto, Cifras.hayCUITMal(r.texto) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                                self.pildora.mostrar(.aviso(T("Revisá el CUIT: el último número no coincide.", "Check the tax ID: the last digit doesn't match.")), durante: 3)
+                            }
+                        }
                     }
                 }
             } catch {
@@ -587,8 +596,7 @@ final class Motor {
                 }
                 self.pildora.mostrarCerca(de: punto)
                 guard !imagenes.isEmpty else {
-                    self.pildora.mostrar(.aviso(T("Para copiar imágenes falta el permiso de Grabación de pantalla (General › Permisos).",
-                                                  "To copy images, allow Screen Recording (General › Permissions).")), durante: 3)
+                    self.pildora.mostrar(.aviso(Pantalla.porQueNo("copiar imágenes", "copy images")), durante: 3)
                     return
                 }
                 if p == .collage, let collage = Varita.collage(imagenes) {
@@ -783,8 +791,7 @@ final class Motor {
             }
             guard !imagenes.isEmpty || !textos.isEmpty else {
                 self.pildora.mostrarCerca(de: punto)
-                self.pildora.mostrar(.aviso(T("Para mandar imágenes falta el permiso de Grabación de pantalla (General › Permisos).",
-                                              "To send images, allow Screen Recording (General › Permissions).")), durante: 3)
+                self.pildora.mostrar(.aviso(Pantalla.porQueNo("mandar imágenes", "send images")), durante: 3)
                 return
             }
             Mandar.mandar(a: agente, imagenes: imagenes, textos: textos, pagina: cosas.first?.pagina, prefijo: prefijo) { v in
@@ -815,8 +822,7 @@ final class Motor {
             for cosa in cosas { if let i = await Pantalla.recorte(cosa.marco) { imagenes.append(i) } }
             guard !imagenes.isEmpty else {
                 self.estado = .libre
-                self.pildora.mostrar(.aviso(T("Para mirar imágenes falta el permiso de Grabación de pantalla (General › Permisos).",
-                                              "To look at images, allow Screen Recording (General › Permissions).")), durante: 3)
+                self.pildora.mostrar(.aviso(Pantalla.porQueNo("mirar imágenes", "look at images")), durante: 3)
                 return
             }
             guard self.ajustes.iaVeImagenes else { return self.describirEnLaMac(imagenes, contexto: ctx) }
@@ -849,8 +855,7 @@ final class Motor {
             for cosa in cosas { if let i = await Pantalla.recorte(cosa.marco, maxPixeles: 600) { imagenes.append(i) } }
             self.pildora.mostrarCerca(de: punto)
             guard let primera = imagenes.first else {
-                self.pildora.mostrar(.aviso(T("Para sacar colores falta el permiso de Grabación de pantalla (General › Permisos).",
-                                              "To get colors, allow Screen Recording (General › Permissions).")), durante: 3)
+                self.pildora.mostrar(.aviso(Pantalla.porQueNo("sacar colores", "get colors")), durante: 3)
                 return
             }
             let lista = await Task.detached(priority: .userInitiated) { Pantalla.colores(de: primera) }.value
@@ -908,8 +913,8 @@ final class Motor {
             let texto = textos.filter { !$0.isEmpty }.joined(separator: "\n")
             self.pildora.mostrarCerca(de: punto)
             guard !texto.isEmpty else {
-                let motivo = !Pantalla.permitido
-                    ? T("Para leer la pantalla falta el permiso de Grabación de pantalla (General › Permisos).", "To read the screen, allow Screen Recording (General › Permissions).")
+                let motivo = !Pantalla.permitido || Pantalla.hayContrasena
+                    ? Pantalla.porQueNo("leer la pantalla", "read the screen")
                     : qr ? T("No encontré ningún código QR ni de barras.", "Couldn't find any QR code or barcode.")
                          : T("No encontré texto para leer.", "Couldn't find any text to read.")
                 self.pildora.mostrar(.aviso(motivo), durante: 3)
@@ -1403,6 +1408,12 @@ final class Motor {
                 throw ErrorPaso(mensaje: T("La IA copió texto que no estaba en lo que elegiste («\(copia)…»): no se pegó.",
                                            "The AI copied text that wasn't in your selection (“\(copia)…”), so nothing was pasted."))
             }
+        } else if p.accion == .dictar && estilo == .cifras {
+            // Cifras: los números con reglas fijas, en la Mac y sin IA (un monto no puede depender de la IA). En una
+            // planilla, el número pelado; en lo demás, con formato (Cifras.swift).
+            final = Cifras.escribir(Prompts.limpiezaBasica(crudo), destino: Cifras.destino(p.contexto),
+                                    formato: .de(datos.formatoCifras)).texto
+            herramienta = T("Cifras · en la Mac", "Figures · on your Mac")
         } else if iaLista && !secreto && (datos.limpiarConIA || estilo != .comun)
                     && (crudo.split(whereSeparator: \.isWhitespace).count >= 3 || estilo == .traducir) {
             let usuario: String

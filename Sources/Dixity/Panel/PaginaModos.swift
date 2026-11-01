@@ -36,11 +36,25 @@ struct PaginaModos: View {
                     listaApps(T("Correo", "Email"), $ajustes.datos.appsCorreo, ejemplo: "Mail, Gmail, Outlook…")
                     listaApps(T("Mensaje", "Message"), $ajustes.datos.appsMensaje, ejemplo: "WhatsApp, Slack, Telegram…")
                     listaApps(T("Prompt", "Prompt"), $ajustes.datos.appsTrabajo, ejemplo: "Claude, ChatGPT, Terminal, Cursor…")
+                    listaApps(T("Cifras", "Figures"), $ajustes.datos.appsCifras, ejemplo: "Excel, Google Sheets, QuickBooks, Xubio…")
                 }
                 .padding(16)
             }
         }
         TarjetaModos(ajustes: ajustes, motor: motor)
+        Tarjeta(titulo: T("Cifras: planillas y facturas", "Figures: spreadsheets and invoices")) {
+            Fila(titulo: T("Qué hace", "What it does"),
+                 detalle: T("Lo que decís con números pasa a cifras, en la Mac y sin IA: «un millón doscientos» → 1.000.200, «mil ciento cincuenta con treinta y cinco» → 1150,35, «dólares mil doscientos» → US$ 1.200,00, «veinte por ciento» → 20 %, «CUIT 20 12345678 6» → 20-12345678-6 (y te avisa si el último número no da). En una planilla (Excel, Numbers, Google Sheets, LibreOffice) pega el número solo, para que se pueda sumar.",
+                            "What you say with numbers becomes figures, on your Mac and without AI: “one million two hundred thousand” → 1,200,000, “twelve hundred point five” → 1200.5, “one thousand dollars” → $1,000.00, “twenty percent” → 20%. In a spreadsheet (Excel, Numbers, Google Sheets, LibreOffice) it pastes just the number, so it adds up.")) {
+                EmptyView()
+            }
+            Fila(titulo: T("Decimales", "Decimals"),
+                 detalle: T("Según tu Mac usa el formato de tu país. Si tu planilla está en otro, elegilo acá.",
+                            "Like your Mac uses your country's format. If your spreadsheet uses another one, pick it here."),
+                 divisor: false) {
+                Segmentos(valor: $ajustes.datos.formatoCifras, opciones: FormatoCifras.allCases, nombre: \.nombre)
+            }
+        }
         TarjetaAcciones(ajustes: ajustes, motor: motor)
         Tarjeta(titulo: T("Al pegar y traducir", "Pasting and translating")) {
             Fila(titulo: T("Después de pegar en Prompt", "After pasting in Prompt"),
@@ -128,8 +142,8 @@ private struct TarjetaModos: View {
                 Selector(valor: $ajustes.datos.teclaModos, opciones: TeclaModos.allCases, nombre: \.nombre, ancho: 260)
             }
             Fila(titulo: T("Cambiar mientras grabás", "Switch while recording"),
-                 detalle: T("Tocá el número de un modo mientras dictás: la píldora muestra a cuál pasaste, con su color.",
-                            "Press a mode's number while dictating: the pill shows which one you switched to, in its color.")) {
+                 detalle: T("Tocá el número de un modo mientras dictás: la píldora muestra a cuál pasaste, con su color, y queda elegido para los próximos hasta que elijas otro (0 vuelve a Automático).",
+                            "Press a mode's number while dictating: the pill shows which one you switched to, in its color, and it stays for your next dictations until you pick another (0 goes back to Automatic).")) {
                 Toggle("", isOn: $ajustes.datos.numerosGrabando).toggleStyle(.switch).labelsHidden()
             }
             VStack(spacing: 6) {

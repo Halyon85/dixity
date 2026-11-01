@@ -75,8 +75,8 @@ struct PaginaVarita: View {
             Ofrece(icono: "link", color: 0x6366F1, titulo: T("Un link o una tabla", "A link or a table"),
                    detalle: T("¿A dónde lleva?, Copiar link y Copiar como planilla.", "Where does it go?, Copy link and Copy as spreadsheet."))
             Ofrece(icono: "camera.viewfinder", color: 0xF59E0B, titulo: T("Siempre", "Always"),
-                   detalle: T("Modo captura, al final. Lo que usa IA aparece solo si tenés una configurada en Proveedores.",
-                              "Capture mode, at the end. Anything that uses AI only shows up if you set one up in Providers."),
+                   detalle: T("Al final, Modo captura: dibujás un recuadro (o ⌥ + arrastrar) y al soltar queda copiado. Lo que usa IA aparece solo si tenés una configurada en Proveedores.",
+                              "At the end, Capture mode: draw a box (or ⌥ + drag) and it's copied when you let go. Anything that uses AI only shows up if you set one up in Providers."),
                    divisor: false)
         }
 

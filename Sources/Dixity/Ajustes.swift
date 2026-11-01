@@ -268,6 +268,7 @@ enum Apariencia: String, Codable, CaseIterable, Identifiable {
 // Cómo pasa en limpio: Común (todos los días) o Trabajo (arma un prompt para Claude/Codex).
 enum Estilo: String, Codable, CaseIterable, Identifiable {
     case automatico, comun, trabajo, correo, mensaje, formal, traducir
+    case cifras      // planillas y facturas: los números en cifras, con reglas fijas (Cifras.swift), sin IA
     var id: String { rawValue }
     var nombre: String {
         switch self {
@@ -278,6 +279,7 @@ enum Estilo: String, Codable, CaseIterable, Identifiable {
         case .mensaje: T("Mensaje (chat)", "Message (chat)")
         case .formal: T("Formal", "Formal")
         case .traducir: T("Traducir", "Translate")
+        case .cifras: T("Cifras (planillas y facturas)", "Figures (spreadsheets and invoices)")
         }
     }
     // Nombre corto para mostrar (píldora, historial, menú), en el idioma de la interfaz.
@@ -290,6 +292,7 @@ enum Estilo: String, Codable, CaseIterable, Identifiable {
         case .mensaje: T("Mensaje", "Message")
         case .formal: T("Formal", "Formal")
         case .traducir: T("Traducir", "Translate")
+        case .cifras: T("Cifras", "Figures")
         }
     }
     // Cómo se anota en el historial (valor guardado: no se traduce; para mostrar, `etiqueta`).
@@ -302,10 +305,11 @@ enum Estilo: String, Codable, CaseIterable, Identifiable {
         case .mensaje: "Mensaje"
         case .formal: "Formal"
         case .traducir: "Traducir"
+        case .cifras: "Cifras"
         }
     }
     static func desde(corto: String?) -> Estilo? { allCases.first { $0.corto == corto } }
-    static let elegibles: [Estilo] = [.comun, .trabajo, .correo, .mensaje, .formal, .traducir]
+    static let elegibles: [Estilo] = [.comun, .trabajo, .correo, .mensaje, .formal, .traducir, .cifras]
 }
 
 // Cada modo: su color en la píldora, si aparece y su lugar (la posición es su número: ⌃⌥1, ⌃⌥2…).
@@ -361,6 +365,7 @@ struct ConfigModo: Codable, Equatable, Identifiable {
         ConfigModo(estilo: .mensaje, color: 0x22C55E),    // verde
         ConfigModo(estilo: .formal, color: 0x64748B),     // gris pizarra
         ConfigModo(estilo: .traducir, color: 0xF59E0B),   // ámbar
+        ConfigModo(estilo: .cifras, color: 0x0D9488),     // verde azulado
     ]
 
     // Deja la lista sana: cada modo una vez y ninguno perdido (por si cambia la versión).
@@ -508,6 +513,12 @@ struct DatosAjustes: Codable, Equatable {
                        "Antigravity", "Orca", "Zed", "Xcode"] + DatosAjustes.nuevasTrabajo
     var appsCorreo = ["Mail", "Outlook", "Spark", "Gmail", "Superhuman", "Airmail"] + DatosAjustes.nuevasCorreo
     var appsMensaje = ["WhatsApp", "Slack", "Telegram", "Mensajes", "Messages", "Discord", "Signal", "Teams"] + DatosAjustes.nuevasMensaje
+    // Cifras en Automático (01/11/2026): planillas y programas de facturación, en la Mac o en el navegador (por el
+    // título de la pestaña). Las planillas reciben el número pelado; lo demás, con formato (Cifras.destino).
+    var appsCifras = ["Excel", "Numbers", "LibreOffice Calc", "OpenOffice Calc", "Google Sheets", "Hojas de cálculo de Google",
+                      "Planilhas Google", "Airtable", "Smartsheet", "Zoho Sheet", "QuickBooks", "Xero", "FreshBooks", "Holded",
+                      "Alegra", "Xubio", "Colppy", "Contabilium", "Tango Gestión", "Comprobantes en línea", "Facturador"]
+    var formatoCifras: FormatoCifras = .automatico
     // Apps y sitios sumados el 30/10/2026. En el navegador valen por el título de la pestaña ("Gemini", "Proton Mail").
     // Se dejaron afuera nombres que aparecen dentro de otras palabras o títulos (HEY, Canary, LINE, Hyper, v0).
     static let nuevasTrabajo = ["Windsurf", "Kiro", "Trae", "IntelliJ", "PyCharm", "WebStorm", "Android Studio", "Fleet",
@@ -598,6 +609,8 @@ struct DatosAjustes: Codable, Equatable {
         idiomaInterfaz = v(.idiomaInterfaz, idiomaInterfaz)
         appsCorreo = v(.appsCorreo, appsCorreo)
         appsMensaje = v(.appsMensaje, appsMensaje)
+        appsCifras = v(.appsCifras, appsCifras)
+        formatoCifras = v(.formatoCifras, formatoCifras)
         // Tus listas se guardan enteras: las apps nuevas se suman una sola vez, y las que sacaste vos no vuelven.
         if v(.listasApps, 1) < 2 {
             appsTrabajo = DatosAjustes.sumar(DatosAjustes.nuevasTrabajo, a: appsTrabajo)
@@ -730,6 +743,7 @@ final class Ajustes: ObservableObject {
         if coincide(datos.appsCorreo) { return .correo }
         if coincide(datos.appsMensaje) { return .mensaje }
         if coincide(datos.appsTrabajo) { return .trabajo }
+        if coincide(datos.appsCifras) || Cifras.destino(c) == .planilla { return .cifras }
         return .comun
     }
 

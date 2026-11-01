@@ -42,6 +42,9 @@ final class Varita {
     var alSeleccionar: () -> Void = {}
     // Hiciste clic en una caja de texto: lo que escribas va a la caja (el Motor deja de tomar 1…9 y ↩ para la cajita).
     var alEntrarEnCaja: () -> Void = {}
+    // Elegiste otra cosa que no es una caja de texto, o entraste al modo captura: 1…9 vuelven a elegir opciones. Antes
+    // quedaban mandados a la caja hasta apagar la Varita y el 6 de «Modo captura» se escribía en la app (01/11/2026).
+    var alDejarCaja: () -> Void = {}
     private(set) var prendida = false
     private(set) var elegidos: [Senalador.Cosa] = []
     private(set) var miniaturas: [NSImage] = []
@@ -74,6 +77,8 @@ final class Varita {
     private var puntoBuscado: CGPoint?       // dónde se preguntó la última vez (con el mouse quieto se pregunta menos)
     private var tamCajita = CGSize(width: 272, height: 240)
     private var medirCajita = 3              // vueltas en que se vuelve a medir la cajita (cambió lo que muestra)
+    private var anclaCajita: CGPoint?        // dónde se queda la cajita mientras no elegiste nada
+    private var cosaAncla: Senalador.Cosa?
     private var ultimoUso = Date()
     // El clic que todavía no se sabe si es un clic (elegir) o el principio de un arrastre (seleccionar texto).
     private var apretado: (evento: CGEvent, punto: CGPoint, suma: Bool)?
@@ -159,9 +164,12 @@ final class Varita {
         alApagar()
     }
 
-    // Esc: primero deja de recortar o suelta lo elegido; si no había nada, apaga.
+    // Esc: en el modo captura, o con lo que recortaste ya elegido (y copiado), apaga de una: antes volvía a la Varita
+    // y había que apretarlo otra vez (01/11/2026). Si no, primero suelta lo elegido y, si no había nada, apaga.
     func escape() {
-        if recortando { terminarRecorte(nil) } else if !elegidos.isEmpty { soltar() } else { apagar("con Esc") }
+        if recortando { apagar("con Esc en el modo captura") }
+        else if elegidos.count == 1, elegidos[0].tipo == .recorte { apagar("con Esc después de recortar") }
+        else if !elegidos.isEmpty { soltar() } else { apagar("con Esc") }
     }
 
     // MARK: El reloj
@@ -210,6 +218,7 @@ final class Varita {
         debajo = cosa
         if cosa != nil { ultimoUso = Date() }
         modeloBorde.etiqueta = cosa?.tipo.nombre ?? ""
+        modeloBorde.nitido = false
         modeloBorde.visible = cosa != nil
         actualizarCajita()
         if let c = cosa, [.imagen, .logo, .banner].contains(c.tipo), buscarQR { revisarCodigo(c) }
@@ -255,7 +264,14 @@ final class Varita {
         // Se mide solo cuando cambió lo que muestra (medir la vista en cada vuelta gastaba CPU).
         if medirCajita > 0, let t = v.contentView?.fittingSize { tamCajita = t; medirCajita -= 1 }
         let tam = tamCajita
-        let meta = Varita.lugarCajita(cursor: puntoClic ?? p, tam: tam,
+        // Sin nada elegido, la cajita se queda donde apareció lo que tenés debajo y recién se mueve si cambia o si te
+        // alejás: antes seguía cada movimiento del mouse y temblaba al pasar por las cosas (01/11/2026).
+        if puntoClic == nil {
+            if anclaCajita == nil || debajo != cosaAncla || hypot(p.x - anclaCajita!.x, p.y - anclaCajita!.y) > 90 {
+                anclaCajita = p; cosaAncla = debajo
+            }
+        } else { anclaCajita = nil }
+        let meta = Varita.lugarCajita(cursor: puntoClic ?? anclaCajita ?? p, tam: tam,
                                       pantalla: NSScreen.screens.first { $0.frame.contains(p) }?.visibleFrame ?? .zero)
         c.x.mover(a: meta.x, dt: dt, rigidez: 1100, amortiguado: 1)
         c.y.mover(a: meta.y, dt: dt, rigidez: 1100, amortiguado: 1)
@@ -297,7 +313,9 @@ final class Varita {
 
     private func actualizarCajita() {
         let cosas = actuales
-        let s = Varita.sugerencias(para: cosas, disponible: disponible, idiomaPersona: T("es", "en"))
+        // Mientras dibujás el recuadro no hay nada que elegir: solo la ayuda de abajo (antes volvía a ofrecer «Modo
+        // captura», que no se podía tocar).
+        let s = recortando ? [] : Varita.sugerencias(para: cosas, disponible: disponible, idiomaPersona: T("es", "en"))
         modeloCajita.sugerencias = s.map(\.0)
         modeloCajita.marcada = min(modeloCajita.marcada, max(0, s.count - 1))
         if cosas.count > 1 {
@@ -312,7 +330,7 @@ final class Varita {
                 : c.tipo == .campo ? T("Caja de texto", "Text box") : c.tipo.nombre
             modeloCajita.icono = Varita.icono(c.tipo)
         } else if recortando {
-            modeloCajita.titulo = T("Recortar", "Snip")
+            modeloCajita.titulo = T("Arrastrá un recuadro", "Drag a box")
             modeloCajita.icono = "crop"
         } else {
             modeloCajita.titulo = T("Varita", "Wonder")
@@ -320,7 +338,7 @@ final class Varita {
         }
         let editable = cosas.count == 1 && cosas[0].editable && !cosas[0].texto.isEmpty
         modeloCajita.pie = editable ? T("Lo cambia ahí mismo · ⌘Z deshace", "Changes it in place · ⌘Z undoes")
-            : recortando ? T("Arrastrá un recuadro · Esc cancela", "Drag a box · Esc cancels")
+            : recortando ? T("Esc cancela", "Esc cancels")
             : elegidos.isEmpty ? T("Clic elige · ⌥ + rueda agranda", "Click picks · ⌥ + scroll grows")
             : elegidos.count == 1 ? T("⌥ + rueda agranda · ⇧ + clic suma otra", "⌥ + scroll grows · ⇧ + click adds another")
             : T("Mantené ⇧ y tocá otra para sumarla", "Hold ⇧ and click another to add it")
@@ -460,6 +478,7 @@ final class Varita {
         return Array(lista.prefix(5)) + [captura]
     }
 
+
     /// Lo seleccionado parece un error de un programa (de la Terminal, del navegador): se ofrece arreglarlo con Claude.
     static func pareceError(_ texto: String) -> Bool {
         let t = texto.lowercased()
@@ -488,6 +507,7 @@ final class Varita {
 
     private func elegir(_ id: String) {
         ultimoUso = Date()
+        Varita.registro.notice("eligió \(id, privacy: .public) · sobre \(self.actuales.map(\.tipo.nombre).joined(separator: ", "), privacy: .public)")
         if id == "captura" { return empezarRecorte() }   // se recorta acá, con la Varita, y después se elige qué hacer
         let cosas = actuales
         guard let pedido = Varita.sugerencias(para: cosas, disponible: disponible, idiomaPersona: T("es", "en"))
@@ -529,9 +549,11 @@ final class Varita {
         }
         // El clic que la Varita le devuelve a la app (al empezar a arrastrar) pasa sin tocarlo.
         guard prendida, e.getIntegerValueField(.eventSourceUserData) != Motor.marcaPropia else { return Unmanaged.passUnretained(e) }
-        let p = NSEvent.mouseLocation
+        // Dónde pasó este clic o arrastre, del evento mismo: NSEvent.mouseLocation se quedaba quieto mientras la
+        // Varita se tragaba el arrastre, y el recuadro del modo captura salía de 1 × 1 (01/11/2026).
+        let p = Varita.enAppKit(e.location)
         if tipo == .scrollWheel { return rueda(e) }
-        if recorte(tipo, p) { return nil }
+        if recortando { return recorte(tipo, e, p) }
         switch tipo {
         case .leftMouseDown:
             // Clic en la cajita (cuando ya hay algo elegido): es para ella.
@@ -638,9 +660,11 @@ final class Varita {
         modeloBorde.visible = false
         dibujarMarcas()
         actualizarCajita()
+        if !cosa.editable { alDejarCaja() }
     }
 
     func soltar() {
+        alDejarCaja()
         elegidos = []; miniaturas = []
         niveles = []; nivel = 0; puntoNivel = nil
         puntoClic = seleccion.isEmpty ? nil : NSEvent.mouseLocation   // con texto seleccionado, la cajita sigue quieta
@@ -656,6 +680,7 @@ final class Varita {
             guard let self, self.prendida else { return }
             self.miniaturas.append(NSImage(cgImage: img, size: c.marco.size))
             self.modeloCajita.miniaturas = self.miniaturas
+            self.medirCajita = 3
             Cursor.copiarImagenes(self.miniaturas)
         }
     }
@@ -665,6 +690,7 @@ final class Varita {
         marcas = elegidos.map { c in
             let m = ModeloBorde()
             m.elegido = true
+            m.nitido = c.tipo == .recorte
             m.visible = true
             let v = VentanaFlotante(VistaBorde(modelo: m))
             v.setFrame(c.marco.insetBy(dx: -6 - VistaBorde.margen, dy: -6 - VistaBorde.margen), display: true)
@@ -743,6 +769,8 @@ final class Varita {
     /// una imagen (Describir, Sacar prompt, Copiar…). Esc cancela.
     func empezarRecorte() {
         guard prendida else { return }
+        Varita.registro.notice("modo captura: esperando el recuadro")
+        alDejarCaja()
         recortando = true
         inicioRecorte = nil
         prepararRecorte()
@@ -758,23 +786,39 @@ final class Varita {
         actualizarCajita()
     }
 
-    // Los clics mientras se recorta son para el recuadro y no llegan a la app. False: no se está recortando.
-    private func recorte(_ tipo: CGEventType, _ p: CGPoint) -> Bool {
-        guard recortando else { return false }
+    /// Un punto de un evento (arriba a la izquierda de la pantalla principal) en coordenadas de AppKit.
+    static func enAppKit(_ p: CGPoint, alto: CGFloat = NSScreen.screens.first?.frame.height ?? 0) -> CGPoint {
+        CGPoint(x: p.x, y: alto - p.y)
+    }
+
+    // Los clics mientras se recorta son para el recuadro y no llegan a la app. El arrastre pasa como un movimiento
+    // común: tragado, macOS no movía el puntero y no se podía dibujar nada (01/11/2026).
+    private func recorte(_ tipo: CGEventType, _ e: CGEvent, _ p: CGPoint) -> Unmanaged<CGEvent>? {
         switch tipo {
         case .leftMouseDown:
             inicioRecorte = p
+            Varita.registro.notice("modo captura: apretó")
         case .leftMouseDragged:
             if let a = inicioRecorte {
                 let r = Varita.recuadro(a, p)
                 DispatchQueue.main.async { [weak self] in self?.mostrarRecorte(r) }
             }
+            e.type = .mouseMoved
+            return Unmanaged.passUnretained(e)
         case .leftMouseUp:
             let r = inicioRecorte.map { Varita.recuadro($0, p) }
+            Varita.registro.notice("modo captura: soltó \(r.map { "\(Int($0.width))×\(Int($0.height))" } ?? "sin apretar", privacy: .public)")
+            // Un clic suelto (o el final del clic que eligió «Modo captura») no lo cancela: sigue esperando que
+            // arrastres. Antes cualquier clic sin arrastrar lo cancelaba sin avisar y parecía que no andaba (01/11/2026).
+            guard let r, r.width >= 12, r.height >= 12 else {
+                inicioRecorte = nil
+                DispatchQueue.main.async { [weak self] in self?.modeloBorde.visible = false }
+                return nil
+            }
             DispatchQueue.main.async { [weak self] in self?.terminarRecorte(r) }
-        default: return false
+        default: return Unmanaged.passUnretained(e)
         }
-        return true
+        return nil
     }
 
     /// El recuadro entre dos puntos (arrastrar para cualquier lado), en puntos enteros.
@@ -786,8 +830,34 @@ final class Varita {
         guard prendida, recortando, let v = ventanaBorde else { return }
         borde = nil
         modeloBorde.etiqueta = "\(Int(r.width)) × \(Int(r.height))"   // el borde de siempre, con la medida
+        modeloBorde.nitido = true
         modeloBorde.visible = r.width > 2 && r.height > 2
         v.setFrame(Varita.alPixel(r.insetBy(dx: -VistaBorde.margen, dy: -VistaBorde.margen), escala: v.backingScaleFactor), display: true)
+    }
+
+    /// «Sacar captura»: el recuadro marcado queda elegido como un recorte, justo ese, y su foto queda copiada.
+    /// Si macOS no deja sacarla (sin permiso o con una contraseña activa), la cajita dice por qué.
+    /// Lo que dibujaste en el modo captura, al soltar: queda elegido como un recorte y su foto, copiada.
+    private func capturar(_ c: Senalador.Cosa, en punto: CGPoint? = nil) {
+        let recorte = Senalador.Cosa(tipo: .recorte, marco: c.marco, pid: c.pid)
+        elegirCosa(recorte, en: punto ?? puntoClic ?? NSEvent.mouseLocation, suma: false)
+        Task { @MainActor [weak self] in
+            let img = await Pantalla.recorte(c.marco)
+            guard let self, self.prendida, self.elegidos == [recorte] else { return }
+            guard let img else {
+                Varita.registro.notice("capturar: no salió la foto (permiso \(Pantalla.permitido, privacy: .public), contraseña \(Pantalla.hayContrasena, privacy: .public))")
+                self.modeloCajita.pie = Pantalla.porQueNo("capturar", "capture")
+                return
+            }
+            let foto = NSImage(cgImage: img, size: c.marco.size)
+            Varita.registro.notice("capturar: \(Int(c.marco.width))×\(Int(c.marco.height)) → \(Int(foto.size.width))×\(Int(foto.size.height)) (\(img.width)×\(img.height) px), copiada")
+            self.miniaturas = [foto]
+            self.modeloCajita.miniaturas = self.miniaturas
+            self.medirCajita = 3   // con la miniatura arriba la cajita crece: se vuelve a medir (si no, saltaba)
+            Cursor.copiarImagenes([foto])
+            self.modeloCajita.titulo = T("Captura copiada", "Capture copied")
+            if self.buscarQR { self.revisarCodigo(recorte) }
+        }
     }
 
     // Soltaste (o Esc, con nil): un recuadro de al menos 12 × 12 queda elegido como una imagen.
@@ -798,8 +868,9 @@ final class Varita {
         modeloBorde.visible = false
         guard let r, r.width >= 12, r.height >= 12 else { return actualizarCajita() }
         let pid = NSWorkspace.shared.frontmostApplication?.processIdentifier ?? 0
-        elegirCosa(Senalador.Cosa(tipo: .recorte, marco: r, pid: pid), en: CGPoint(x: r.maxX, y: r.minY), suma: false)
-        if buscarQR, let c = elegidos.first { revisarCodigo(c) }
+        // Como la captura de macOS: al soltar ya queda copiada (antes había que elegir algo más y no había cómo
+        // copiarla; 01/11/2026).
+        capturar(Senalador.Cosa(tipo: .recorte, marco: r, pid: pid), en: CGPoint(x: r.maxX, y: r.minY))
     }
 
     /// Varias imágenes en una sola: grilla de hasta 3 columnas, cada una de 480 px de ancho, con 12 px entre medio.
