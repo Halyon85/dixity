@@ -75,6 +75,8 @@ import Testing
         #expect(doc("Veinte, doce, treinta y cuatro, cincuenta y seis, setenta y ocho, seis.") == "20-12345678-6")
         #expect(doc("Veinte, treinta y uno, ochenta y cinco, once, ochenta y cinco.") == "20, 31, 85, 11, 85.")
         #expect(doc("quit smoking") == "quit smoking")
+        #expect(doc("Quick 20, 31, 89, 11, 85, 2.") == "20-31891185-2")     // también «Quick» (historial del 01/11)
+        #expect(doc("quick question", us) == "quick question")
     }
 
     @Test func sabeSiEstasEnUnaPlanilla() {

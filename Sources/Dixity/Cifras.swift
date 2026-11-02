@@ -304,8 +304,9 @@ enum Cifras {
         }
     }
 
-    // Cómo escribe la voz a texto «CUIT» y «CUIL»: «Quit» es lo más común (01/11/2026).
-    private static let palabrasCUIT: Set<String> = ["cuit", "cuil", "cuitl", "quit", "kuit", "quil", "kuil", "cuid", "quid"]
+    // Cómo escribe la voz a texto «CUIT» y «CUIL»: «Quit» es lo más común, y a veces «Quick» (01/11/2026). Sin los 11
+    // números detrás no es un CUIT, así que «quick question» queda como está.
+    private static let palabrasCUIT: Set<String> = ["cuit", "cuil", "cuitl", "quit", "quick", "kuit", "quil", "kuil", "cuid", "quid"]
     // Lo que puede ir entre los grupos del número: la voz a texto pone comas y puntos al dictarlo de a pares.
     private static let entreGrupos: Set<String> = [",", ".", "-", ":", ";", "y"]
 

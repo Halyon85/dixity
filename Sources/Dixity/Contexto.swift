@@ -102,6 +102,16 @@ enum Cursor {
         return campo.valor.contains(t)
     }
 
+    /// ¿Es una caja donde se escribe? Valor que se puede cambiar, un rol de texto o, en páginas web y apps Electron, un
+    /// cursor de texto dentro de algo editable. La usan `capturar` y la revisión de `pegar`.
+    private static func esCajaDeTexto(_ el: AXUIElement) -> Bool {
+        var settable: DarwinBoolean = false
+        if AXUIElementIsAttributeSettable(el, kAXValueAttribute as CFString, &settable) == .success, settable.boolValue { return true }
+        let rol = atributo(el, kAXRoleAttribute) as? String ?? ""
+        if ["AXTextField", "AXTextArea", "AXComboBox", "AXSearchField"].contains(rol) { return true }
+        return atributo(el, kAXSelectedTextRangeAttribute) != nil && atributo(el, "AXEditableAncestor") != nil
+    }
+
     static func capturar(conTexto: Bool) -> ContextoCursor {
         var c = ContextoCursor()
         var enfocadoApp: AnyObject?
@@ -121,15 +131,10 @@ enum Cursor {
         guard let enfocado = enfocadoApp ?? atributo(sistema, kAXFocusedUIElementAttribute) else { return c }
         let el = enfocado as! AXUIElement
         c.hayCampo = true
-        var settable: DarwinBoolean = false
-        if AXUIElementIsAttributeSettable(el, kAXValueAttribute as CFString, &settable) == .success { c.editable = settable.boolValue }
+        c.editable = esCajaDeTexto(el)
         let rol = atributo(el, kAXRoleAttribute) as? String ?? ""
         // Campo de contraseña: no se lee nada de él (Motor no guarda ni manda nada de este dictado).
         c.secreto = Secretos.campoSeguro(subrol: atributo(el, kAXSubroleAttribute) as? String ?? "")
-        if ["AXTextField", "AXTextArea", "AXComboBox", "AXSearchField"].contains(rol) { c.editable = true }
-        // Campos web y de apps Electron: si tienen cursor de texto (rango seleccionado), se puede escribir.
-        if !c.editable, atributo(el, kAXSelectedTextRangeAttribute) != nil,
-           atributo(el, "AXEditableAncestor") != nil { c.editable = true }
         c.campo = c.editable ? .seguro : (rolesSinTexto.contains(rol) ? .noHay : .desconocido)
         guard !c.secreto else { return c }
         c.seleccion = atributo(el, kAXSelectedTextAttribute) as? String ?? ""
@@ -173,10 +178,23 @@ enum Cursor {
     enum ResultadoPegado { case entro, noEntro, sinSaber }
 
     // Huella del campo enfocado (largo del texto y dónde está el cursor): si cambia después del ⌘V, el pegado entró.
-    private static func huellaFoco() -> [Int]? {
-        let sistema = AXUIElementCreateSystemWide()
-        AXUIElementSetMessagingTimeout(sistema, 0.2)
-        guard let f = atributo(sistema, kAXFocusedUIElementAttribute) else { return nil }
+    // `esTexto`: lo que se mira es una caja de texto de verdad. En Google con Chrome el foco a veces llega como un
+    // recuadro genérico que no cambia aunque el texto entre, y se avisaba «no entró» en falso (revisión del 01/11).
+    struct Huella: Equatable { let largo: Int; let cursor: Int; let esTexto: Bool }
+    private static func huellaFoco() -> Huella? {
+        // Primero el foco de la app de adelante, como `capturar`: el del sistema, en Chrome, a veces no contesta.
+        var f: AnyObject?
+        if let app = NSWorkspace.shared.frontmostApplication {
+            let axApp = AXUIElementCreateApplication(app.processIdentifier)
+            AXUIElementSetMessagingTimeout(axApp, 0.25)
+            f = atributo(axApp, kAXFocusedUIElementAttribute)
+        }
+        if f == nil {
+            let sistema = AXUIElementCreateSystemWide()
+            AXUIElementSetMessagingTimeout(sistema, 0.2)
+            f = atributo(sistema, kAXFocusedUIElementAttribute)
+        }
+        guard let f else { return nil }
         let el = f as! AXUIElement
         var largo = -1, cursor = -1
         if let n = atributo(el, kAXNumberOfCharactersAttribute) as? Int { largo = n }
@@ -185,8 +203,12 @@ enum Cursor {
             var rango = CFRange()
             if AXValueGetValue(r as! AXValue, .cfRange, &rango) { cursor = rango.location }
         }
-        return largo < 0 && cursor < 0 ? nil : [largo, cursor]
+        return largo < 0 && cursor < 0 ? nil : Huella(largo: largo, cursor: cursor, esTexto: esCajaDeTexto(el))
     }
+
+    /// Qué se concluye cuando la huella no cambió en todo el tiempo de espera: «no entró» solo si se miraba una caja de
+    /// texto de verdad; si no, no se puede saber (el dictado queda copiado igual, por si hace falta ⌘V).
+    static func sinCambio(mirandoTexto: Bool) -> ResultadoPegado { mirandoTexto ? .noEntro : .sinSaber }
 
     // Pega el texto donde está el cursor y comprueba que haya entrado; si no entró, lo deja copiado.
     // Entró: a los 0,5 s vuelve lo que tenías en el portapapeles. No entró o no se puede saber: el dictado queda copiado,
@@ -215,15 +237,16 @@ enum Cursor {
             }
         }
         guard let antes else { if secreto { devolver() }; alTerminar(.sinSaber); return }
+        // Hasta ~1,4 s: Chrome, en páginas pesadas como Google, tarda en contar que el texto cambió.
         var vueltas = 0
         func mirar() {
             vueltas += 1
-            if let ahora = huellaFoco(), ahora != antes {
+            if let ahora = huellaFoco(), ahora.largo != antes.largo || ahora.cursor != antes.cursor {
                 devolver()
                 alTerminar(.entro)
-            } else if vueltas >= 9 {
+            } else if vueltas >= 14 {
                 if secreto { devolver() }
-                alTerminar(.noEntro)
+                alTerminar(sinCambio(mirandoTexto: antes.esTexto))
             } else {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { mirar() }
             }

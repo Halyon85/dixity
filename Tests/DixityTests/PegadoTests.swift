@@ -22,4 +22,11 @@ import Testing
         #expect(!Motor.copiarEnVezDePegar("echo uno\necho dos", modo: .reescritura, bundle: "com.apple.TextEdit"))
         #expect(!Motor.copiarEnVezDePegar("1. uno\n2. dos", modo: .dictado, bundle: "com.apple.Terminal"))
     }
+
+    // Cuándo se avisa que el dictado no entró (Cursor.pegar). En Google con Chrome el foco llegaba como un recuadro
+    // genérico que no cambia aunque el texto entre, y se mostraba el error y se copiaba en falso (revisión del 01/11).
+    @Test func soloSeAvisaQueNoEntroSiSeMirabaUnaCajaDeTexto() {
+        #expect(Cursor.sinCambio(mirandoTexto: true) == .noEntro)
+        #expect(Cursor.sinCambio(mirandoTexto: false) == .sinSaber)
+    }
 }
