@@ -19,7 +19,17 @@ You don't need the Apple Developer Program (99 USD a year) to publish, but it ch
 | Updates through Sparkle | Install normally, checked with the Sparkle key | Install normally |
 | Permissions after an update | macOS may ask again for Accessibility and the microphone, and for your Keychain password to read the saved API keys | Kept |
 
-`publicar-version.sh` uses a “Developer ID Application” certificate if it finds one, and the local signature otherwise. It never uses “Apple Development”: that one is for testing on your own Macs, not for handing out.
+`publicar-version.sh` uses a “Developer ID Application” certificate if it finds one, and the local signature otherwise. It never uses “Apple Development”: that one is for testing on your own Macs, not for handing out. `compilar.sh` also prefers Developer ID, so your own build and the published one have the same signature and macOS keeps the permissions when you switch between them.
+
+### Notarizing (with Developer ID)
+
+With a Developer ID, `publicar-version.sh` sends the app to Apple to be notarized, waits for the answer and staples it to the app. It won't build without access saved in your Keychain under the profile `dixity` (or the name in `DIXITY_NOTARIO`). Save it once: create an app-specific password at [account.apple.com](https://account.apple.com) (Sign-In and Security → App-Specific Passwords) and run, in your own Terminal:
+
+```bash
+xcrun notarytool store-credentials dixity --apple-id you@example.com --team-id YOURTEAMID
+```
+
+It asks for the app-specific password and keeps it in the Keychain; it never goes into the repository.
 
 ## The first time
 
@@ -80,7 +90,17 @@ Sin el Apple Developer Program (99 USD por año) se puede publicar igual, con es
 
 Con Developer ID y la notarización de Apple, la app abre normal desde el principio y los permisos no se pierden.
 
-`publicar-version.sh` firma con un certificado «Developer ID Application» si lo encuentra y, si no, con la firma local. Nunca usa «Apple Development»: ese es para probar en tus Macs, no para repartir.
+`publicar-version.sh` firma con un certificado «Developer ID Application» si lo encuentra y, si no, con la firma local. Nunca usa «Apple Development»: ese es para probar en tus Macs, no para repartir. `compilar.sh` también prefiere Developer ID: así la que compilás vos y la publicada tienen la misma firma y macOS no vuelve a pedir los permisos al pasar de una a otra.
+
+#### Notarizar (con Developer ID)
+
+Con Developer ID, `publicar-version.sh` manda la app a Apple para que la revise (notarizar), espera la respuesta y le pega el visto bueno. No arranca si no encuentra el acceso guardado en el Llavero con el nombre `dixity` (o el de `DIXITY_NOTARIO`). Se guarda una sola vez: creá una contraseña de app en [account.apple.com](https://account.apple.com) (Inicio de sesión y seguridad → Contraseñas específicas de apps) y corré, en tu propia Terminal:
+
+```bash
+xcrun notarytool store-credentials dixity --apple-id vos@ejemplo.com --team-id TUEQUIPO
+```
+
+Te pide la contraseña de app y la guarda en el Llavero; nunca va al repositorio.
 
 ### La primera vez
 

@@ -50,12 +50,35 @@ $PB -c "Add :SUFeedURL string $LISTA" -c "Add :SUPublicEDKey string $CLAVE_PUBLI
 # Firma: con Developer ID si lo tenés (la cuenta paga de Apple); si no, la firma local. Nunca con el certificado
 # "Apple Development": ese es para probar en tus Macs, no para repartir.
 FIRMA=$(security find-identity -v -p codesigning | awk -F'"' '/Developer ID Application/ {print $2; exit}')
+# Con Developer ID, Apple tiene que revisar la app (notarizar) para que abra sin avisos. La contraseña para eso vive
+# en el Llavero con este nombre (docs/PUBLICAR.md, "Notarizar"). Se mira antes de compilar, así no se arma de balde.
+NOTARIO=${DIXITY_NOTARIO:-dixity}
+if [[ -n "$FIRMA" ]] && ! xcrun notarytool history --keychain-profile "$NOTARIO" >/dev/null 2>&1; then
+  echo "Falta guardar en el Llavero el acceso para notarizar (perfil \"$NOTARIO\"). Ver docs/PUBLICAR.md, \"Notarizar\"."
+  exit 1
+fi
 # Universal: la misma app anda en Macs con Apple Silicon (arm64) y con Intel (x86_64).
 DIXITY_INFO="$INFO" DIXITY_FIRMA="${FIRMA:--}" DIXITY_ARQUITECTURAS="arm64 x86_64" ./compilar.sh
 
 # Antes de empaquetar: que la app sea de verdad universal (si salió de una sola arquitectura, no se publica).
 ARQS=$(lipo -archs build/Dixity.app/Contents/MacOS/Dixity)
 [[ "$ARQS" == *arm64* && "$ARQS" == *x86_64* ]] || { echo "La app no salió universal (tiene: $ARQS). No se publica."; exit 1; }
+
+# Notarizar: se manda a Apple, se espera la respuesta y el visto bueno se pega en la app (así abre sin internet).
+# El .zip de envío va fuera de $SALIDA a propósito: generate_appcast toma todo .zip que encuentre ahí.
+if [[ -n "$FIRMA" ]]; then
+  ENVIO=build/Dixity-para-notarizar.zip
+  ditto -c -k --keepParent build/Dixity.app "$ENVIO"
+  RESPUESTA=$(xcrun notarytool submit "$ENVIO" --keychain-profile "$NOTARIO" --wait --output-format json) || true
+  rm -f "$ENVIO"
+  if ! grep -Eq '"status" *: *"Accepted"' <<< "$RESPUESTA"; then
+    echo "Apple no aceptó la app: $RESPUESTA"
+    echo "El detalle: xcrun notarytool log <id de arriba> --keychain-profile $NOTARIO"
+    exit 1
+  fi
+  xcrun stapler staple build/Dixity.app
+  spctl --assess --type execute -vv build/Dixity.app
+fi
 
 # El .zip (ditto conserva los enlaces y permisos de adentro de la app, cosa que zip no siempre hace).
 ditto -c -k --sequesterRsrc --keepParent build/Dixity.app "$ZIP"
@@ -69,8 +92,10 @@ HERRAMIENTAS=.build/artifacts/sparkle/Sparkle/bin
 "$HERRAMIENTAS/generate_appcast" --account "$CUENTA" --download-url-prefix "$DESCARGAS" \
   --link "https://github.com/$REPO" --maximum-deltas 0 -o "$SALIDA/appcast.xml" "$SALIDA"
 
+FIRMADA="la firma local"
+[[ -n "$FIRMA" ]] && FIRMADA="$FIRMA y notarizada"
 echo
-echo "Listo: Dixity $VERSION (compilación $NUMERO, $ARQS), firmada con ${FIRMA:-la firma local}, en $SALIDA."
+echo "Listo: Dixity $VERSION (compilación $NUMERO, $ARQS), firmada con $FIRMADA, en $SALIDA."
 echo "Para publicarla, desde la copia pública (el .zip y la lista van juntos en la versión de GitHub):"
 echo "  gh release create v$VERSION --repo $REPO --title \"Dixity $VERSION\" --notes-file <notas.md> \\"
 echo "    \"$PWD/$ZIP\" \"$PWD/$SALIDA/appcast.xml\""

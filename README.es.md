@@ -15,9 +15,8 @@ un servidor en el medio. Busca actualizaciones todos los días.
 
 1. Bajá el `.zip` de la [última versión](https://github.com/Halyon85/dixity/releases/latest), abrilo y pasá **Dixity**
    a la carpeta Aplicaciones.
-2. Abrila. **La primera vez macOS la frena**, porque todavía no está firmada con Developer ID de Apple. Andá a
-   **Ajustes del Sistema › Privacidad y seguridad**, bajá hasta el aviso de Dixity y tocá **Abrir igual**. Se hace una
-   sola vez.
+2. Abrila. Está firmada con Developer ID y revisada por Apple, así que abre normal. (Hasta la 1.0.3 no lo estaba: para
+   esas, **Ajustes del Sistema › Privacidad y seguridad › Abrir igual**.)
 3. Dale permiso de **Micrófono** y **Accesibilidad** (General › Permisos, en el panel de Dixity). **Grabación de
    pantalla** es opcional: sirve para que lea la pantalla y para que la Varita copie y lea imágenes.
 4. Elegí cómo usarla en **Proveedores**: todo en la Mac o con tus propias claves.
@@ -117,8 +116,8 @@ No hace falta un proyecto de Xcode, alcanzan las herramientas de línea de coman
 ./compilar.sh instalar   # además la copia a /Applications y la abre
 ```
 
-`compilar.sh` firma con tu certificado "Apple Development" si lo tenés (así macOS no pide los permisos de nuevo en
-cada compilación) o con una firma local si no.
+`compilar.sh` firma con tu certificado "Developer ID Application" si lo tenés, si no con "Apple Development" (así
+macOS no pide los permisos de nuevo en cada compilación) y si no con una firma local.
 
 Modos de prueba: `--capturas <carpeta>` dibuja todas las pantallas en PNG, `--probar-dictado archivo.wav` hace un
 dictado completo, `--medir archivo.wav` compara proveedores. Con `DIXITY_CARPETA=/tmp/x` la probás como una

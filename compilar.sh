@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Compila Dixity (antes Dicta y Dixis), arma Dixity.app y la firma con el certificado de desarrollo (así los permisos no se pierden).
+# Compila Dixity (antes Dicta y Dixis), arma Dixity.app y la firma con el certificado de Apple (así los permisos no se pierden).
 # Uso: ./compilar.sh            → deja la app en build/Dixity.app
 #      ./compilar.sh instalar   → además la copia a /Applications/Dixity.app y la abre
 # Para publicar una versión, `tools/publicar-version.sh` la llama con DIXITY_INFO (un Info.plist con la versión, la
@@ -34,12 +34,20 @@ otool -l "$APP/Contents/MacOS/Dixity" | grep -q "@executable_path/../Frameworks"
   || install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/Dixity"
 strip -x "$APP/Contents/MacOS/Dixity" 2>/dev/null || true
 
-IDENTIDAD=${DIXITY_FIRMA-$(security find-identity -v -p codesigning | awk -F'"' '/Apple Development/ {print $2; exit}')}
+# Con qué firmar: Developer ID si está (la misma firma que la versión publicada, así los permisos de macOS no se
+# piden de nuevo al pasar de una a otra), si no "Apple Development" y si no la firma local. Desde el 10/11/2026.
+CERTIFICADOS=$(security find-identity -v -p codesigning)
+DEVELOPER_ID=$(awk -F'"' '/Developer ID Application/ {print $2; exit}' <<< "$CERTIFICADOS")
+DESARROLLO=$(awk -F'"' '/Apple Development/ {print $2; exit}' <<< "$CERTIFICADOS")
+IDENTIDAD=${DIXITY_FIRMA-${DEVELOPER_ID:-$DESARROLLO}}
 IDENTIDAD=${IDENTIDAD:--}
+# Apple solo notariza firmas con sello de hora de sus servidores; las demás van sin sello (más rápido, sin internet).
+SELLO=--timestamp=none
+[[ "$IDENTIDAD" == *"Developer ID"* ]] && SELLO=--timestamp
 # Primero lo de adentro de Sparkle (de adentro hacia afuera) y al final la app, todo con la misma firma.
 SPARKLE="$APP/Contents/Frameworks/Sparkle.framework/Versions/B"
 for pieza in "$SPARKLE/Autoupdate" "$SPARKLE/Updater.app" "$APP/Contents/Frameworks/Sparkle.framework"; do
-  codesign --force --options runtime --timestamp=none --sign "$IDENTIDAD" "$pieza"
+  codesign --force --options runtime "$SELLO" --sign "$IDENTIDAD" "$pieza"
 done
 # Con la firma local macOS solo deja cargar bibliotecas del mismo equipo de Apple, y la firma local no tiene equipo:
 # sin este permiso, Dixity no arranca porque no puede abrir Sparkle. Con un certificado de Apple no hace falta.
@@ -49,7 +57,7 @@ if [[ "$IDENTIDAD" == "-" ]]; then
   cp Recursos/Dixity.entitlements "$PERMISOS"
   /usr/libexec/PlistBuddy -c "Add :com.apple.security.cs.disable-library-validation bool true" "$PERMISOS"
 fi
-codesign --force --options runtime --timestamp=none \
+codesign --force --options runtime "$SELLO" \
   --entitlements "$PERMISOS" \
   --sign "$IDENTIDAD" "$APP"
 [[ "$IDENTIDAD" == "-" ]] && echo "Firmada con: firma local (ad-hoc)" || echo "Firmada con: $IDENTIDAD"

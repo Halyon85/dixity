@@ -17,9 +17,8 @@ no server in between. Checks for updates every day.
 
 1. Download the `.zip` from the [latest release](https://github.com/Halyon85/dixity/releases/latest), open it and move
    **Dixity** to your Applications folder.
-2. Open it. **The first time, macOS blocks it**, because it isn't signed with an Apple Developer ID yet. Go to
-   **System Settings › Privacy & Security**, scroll down to the message about Dixity and click **Open Anyway**. You only
-   do this once.
+2. Open it. It's signed with an Apple Developer ID and notarized by Apple, so it opens normally. (Versions up to 1.0.3
+   weren't: for those, **System Settings › Privacy & Security › Open Anyway**.)
 3. Grant **Microphone** and **Accessibility** (General › Permissions in Dixity's panel). **Screen Recording** is
    optional: it lets Dixity read the screen and lets Wonder copy and read images.
 4. Pick how you want to use it in **Providers**: everything on your Mac, or with your own keys.
@@ -118,8 +117,8 @@ No Xcode project needed, just the Command Line Tools:
 ./compilar.sh instalar   # also copies it to /Applications and opens it
 ```
 
-`compilar.sh` signs with your "Apple Development" certificate if you have one (so macOS keeps the permissions
-between builds) or ad-hoc otherwise.
+`compilar.sh` signs with your "Developer ID Application" certificate if you have one, then "Apple Development" (so
+macOS keeps the permissions between builds), or ad-hoc otherwise.
 
 Handy test modes: `--capturas <folder>` renders every screen to PNG, `--probar-dictado file.wav` runs a full
 dictation, `--medir file.wav` compares providers. Set `DIXITY_CARPETA=/tmp/x` to try it as a fresh install.
