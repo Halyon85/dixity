@@ -194,6 +194,7 @@ final class Motor {
             return
         }
         accion = a
+        RegistroMemoria.empezar("\(a)")
         manosLibres = false
         pildora.modelo.manosLibres = false
         // Con la ventanita abierta, volver a preguntar ajusta esa respuesta (en la misma app y el mismo campo).
@@ -292,6 +293,7 @@ final class Motor {
 
     private func cancelar(aviso: String?) {
         grabador.cancelar()
+        RegistroMemoria.cerrar("cancelado")
         if ajustes.datos.pausarMusica { Musica.reanudar() }
         monitor.capturaNumeros = false
         lecturaPantalla?.cancel()
@@ -318,11 +320,17 @@ final class Motor {
 
     private func terminar() {
         let (wav, segundos) = grabador.terminar()
+        RegistroMemoria.paso("grabado")
+        let d = ajustes.datos
+        RegistroMemoria.anotar(["segundos": RegistroMemoria.uno(segundos), "voz": d.proveedorVoz.rawValue,
+                                "modeloLocal": d.modeloLocal.rawValue, "ia": d.proveedorIA.rawValue,
+                                "pantalla": lecturaPantalla != nil, "estilo": estilo.rawValue])
         if ajustes.datos.pausarMusica { Musica.reanudar() }
         monitor.capturaEsc = false
         monitor.capturaNumeros = false
         if ajustes.datos.sonidoAlEmpezar { Motor.sonido("Pop") }
         guard segundos >= 0.35 else {
+            RegistroMemoria.cerrar("muy corto")
             estado = .libre
             if let s = seguimiento { seguimiento = nil; mostrarRespuesta(s); return }   // un toque sin hablar: vuelve la respuesta
             pildora.mostrar(.aviso(T("Muy corto: mantené apretado mientras hablás.", "Too short: hold the key while you talk.")), durante: 2)
@@ -365,6 +373,13 @@ final class Motor {
             do {
                 let r = try await Motor.procesar(pedido)
                 await MainActor.run {
+                    defer {
+                        // Si lo copiado es una imagen, el pegado la guarda y la repone: se anota por si es lo que pesa.
+                        let tipos = NSPasteboard.general.types ?? []
+                        RegistroMemoria.anotar(["imagenCopiada": tipos.contains(.png) || tipos.contains(.tiff)])
+                        RegistroMemoria.paso("entregado")
+                        RegistroMemoria.cerrar("ok")
+                    }
                     self.programarDevolucionDeMemoria()
                     if wavSiFalla != nil { self.ultimoDictado = (r.registro.audio, nil, pedido.segundos, pedido.estilo, r.registro.reprocesoDe ?? r.registro.id) }
                     if let tarea = r.tarea {
@@ -399,6 +414,7 @@ final class Motor {
                     }
                 }
             } catch {
+                RegistroMemoria.cerrar("error")
                 await MainActor.run {
                     self.estado = .libre
                     self.seguimiento = nil
@@ -571,6 +587,9 @@ final class Motor {
         let miniaturas = varita.miniaturas
         varita.apagar("al pedir algo")
         guard estado == .libre else { return }
+        // Solo el nombre del pedido (sin lo que lleva adentro, como el idioma de traducir).
+        RegistroMemoria.empezar("varita-" + (Mirror(reflecting: p).children.first?.label ?? "\(p)"))
+        RegistroMemoria.cerrar("ok")
         let ctx = Cursor.capturar(conTexto: false)
         let pid = c?.pid ?? NSWorkspace.shared.frontmostApplication?.processIdentifier
         switch p {
@@ -1267,6 +1286,7 @@ final class Motor {
         let oido = if let fija = p.instruccion { fija }
                    else { dicc.aplicarAlias(try await Proveedores.transcribir(wav: p.wav, ajustes: a, pista: dicc.pistaVoz)) }
         let msVoz = p.instruccion == nil ? Int(Date().timeIntervalSince(t0) * 1000) : 0
+        RegistroMemoria.paso("voz")
         guard oido.rangeOfCharacter(from: .alphanumerics) != nil else { throw ErrorPaso(mensaje: T("No escuché nada. Probá hablar más cerca.", "Didn't hear anything. Try speaking closer to the mic.")) }
 
         // "…en formato correo", "traducilo al inglés": la frase elige el modo y se borra.
@@ -1455,6 +1475,8 @@ final class Motor {
             throw ErrorPaso(mensaje: T("No escuché nada. Probá hablar más cerca.", "Didn't hear anything. Try speaking closer to the mic."))
         }
         let msIA = usoIA || barrera != nil ? Int(Date().timeIntervalSince(t1) * 1000) : 0
+        RegistroMemoria.paso("ia")
+        RegistroMemoria.anotar(["msVoz": msVoz, "msIA": msIA, "usoIA": usoIA])
 
         let modo: Registro.Modo = switch p.accion { case .reescribir: .reescritura; case .preguntar: .respuesta; default: .dictado }
         let registro = Registro(modo: modo, app: p.contexto?.app ?? "",

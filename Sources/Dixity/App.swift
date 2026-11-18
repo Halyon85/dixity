@@ -338,6 +338,7 @@ final class Delegado: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_ n: Notification) {
         FlechaVarita.revisarAlAbrir()     // si la última vez quedó la flecha de la Varita puesta, vuelve la original
+        RegistroMemoria.arrancarReposo()  // una línea de memoria cada 30 min (ver RegistroMemoria)
         DispatchQueue.global(qos: .utility).async { Mandar.borrarViejas() }   // lo de más de un día que se pasó a Claude o Codex
         Llavero.mudarDelServicioViejo()     // antes de mirar si faltan claves
         crearMenu()
