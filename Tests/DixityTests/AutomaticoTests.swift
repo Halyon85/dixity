@@ -15,10 +15,25 @@ import Testing
         let viejo = try leer(#"{"appsCorreo": ["Mail", "Gmail", "Fastmail"], "appsMensaje": ["WhatsApp"], "appsTrabajo": ["Claude"]}"#)
         #expect(viejo.appsCorreo == ["Mail", "Gmail", "Fastmail"] + DatosAjustes.nuevasCorreo)
         #expect(viejo.appsMensaje.contains("Messenger") && viejo.appsTrabajo.contains("Gemini"))
-        #expect(viejo.listasApps == 2)
+        #expect(viejo.listasApps == 3)
         // Ya sumadas: si después sacás "Zoom", no vuelve.
-        let nuevo = try leer(#"{"listasApps": 2, "appsMensaje": ["WhatsApp", "Messenger"]}"#)
+        let nuevo = try leer(#"{"listasApps": 3, "appsMensaje": ["WhatsApp", "Messenger"]}"#)
         #expect(nuevo.appsMensaje == ["WhatsApp", "Messenger"])
+    }
+
+    // 20/11/2026: Max Bot caía en Común porque no estaba en la lista; una lista guardada de la versión 2 también la suma.
+    @Test func maxBotSeSumaALaListaGuardadaYVaATrabajo() throws {
+        let guardada = try leer(#"{"listasApps": 2, "appsTrabajo": ["Claude", "Codex"]}"#)
+        #expect(guardada.appsTrabajo == ["Claude", "Codex", "Max Bot"])
+        #expect(guardada.listasApps == 3)
+        // Ya sumada: si la sacás, no vuelve.
+        let sacada = try leer(#"{"listasApps": 3, "appsTrabajo": ["Claude"]}"#)
+        #expect(sacada.appsTrabajo == ["Claude"])
+        let a = Ajustes.shared, antes = a.datos
+        defer { a.datos = antes }
+        a.datos = DatosAjustes()
+        a.datos.estilo = .automatico
+        #expect(a.estiloPara(ContextoCursor(app: "Max Bot", bundle: "team.halyon.maxbot.desktop")) == .trabajo)
     }
 
     @Test func reconoceAppsYPestanasNuevas() {

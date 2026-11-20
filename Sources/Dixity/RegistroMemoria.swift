@@ -14,6 +14,7 @@ enum RegistroMemoria {
     // a `cerrados` hasta su foto de 25 s después: así un dictado seguido del otro no se pisan (16/11/2026).
     private static var actual: Medicion?
     private static var cerrados: [UUID: Medicion] = [:]
+    private static var ultimoCerrado: UUID?
     private static var pedidos = 0
     private static var reloj: DispatchSourceTimer?
     private static let arranque = Date()
@@ -84,6 +85,15 @@ enum RegistroMemoria {
         cola.async { actual?.datos.merge(datos) { _, nuevo in nuevo } }
     }
 
+    /// Datos que llegan después de cerrar (el resultado del pegado, ~1 s más tarde): van al último pedido cerrado
+    /// mientras no se haya escrito (25 s). Solo cifras y nombres fijos, como `anotar`.
+    static func anotarAlCerrado(_ datos: [String: Any]) {
+        cola.async {
+            guard let id = ultimoCerrado, cerrados[id] != nil else { return }
+            cerrados[id]?.datos.merge(datos) { _, nuevo in nuevo }
+        }
+    }
+
     /// Cierra el pedido: la última foto se saca 25 s después, cuando ya pasó la devolución de memoria del Motor
     /// (20 s), así se ve lo que de verdad queda. `como`: "ok", "error", "cancelado".
     static func cerrar(_ como: String) {
@@ -91,6 +101,7 @@ enum RegistroMemoria {
             guard let m = actual else { return }
             actual = nil
             cerrados[m.id] = m
+            ultimoCerrado = m.id
             cola.asyncAfter(deadline: .now() + 25) {
                 guard var c = cerrados.removeValue(forKey: m.id) else { return }
                 c.pasos.append(("asentado", Foto.ahora()))

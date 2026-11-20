@@ -1492,6 +1492,15 @@ final class Motor {
 
     // ¿Hay que dejarlo copiado en vez de pegarlo? Una reescritura de varias líneas en una terminal: cada línea podría
     // ejecutarse al pegar (el texto viene de la IA, que pudo seguir algo escrito en la selección o la pantalla).
+    static func nombreDelCampo(_ campo: ContextoCursor.Campo?) -> String {
+        switch campo {
+        case .seguro: "seguro"
+        case .noHay: "no hay"
+        case .desconocido: "desconocido"
+        case nil: "sin contexto"
+        }
+    }
+
     static func copiarEnVezDePegar(_ texto: String, modo: Registro.Modo, bundle: String) -> Bool {
         modo == .reescritura && Cursor.terminales.contains(bundle) && texto.contains("\n")
     }
@@ -1504,6 +1513,9 @@ final class Motor {
         Motor.guardarRastro(registro, texto: texto, contexto: contexto)
         // Si la app de adelante cambió o no hay campo de texto, lo dejamos en el portapapeles.
         let mismaApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier == contexto?.bundle
+        // 20/11/2026: para saber por qué a veces no pega (Max Bot), dónde estaba el foco y si era la misma app. Sin texto.
+        RegistroMemoria.anotar(["app": contexto?.bundle ?? "", "mismaApp": mismaApp,
+                                "campo": Motor.nombreDelCampo(contexto?.campo), "hayCampo": contexto?.hayCampo == true])
         // Se pega si hay campo seguro o si la app no cuenta dónde está el cursor (Chrome, Electron): como Halyon.
         if secreto {
             // Campo de contraseña: se pega marcado como oculto, el portapapeles vuelve a como estaba y nunca se muestra.
@@ -1518,6 +1530,7 @@ final class Motor {
             let etiqueta = registro.modo == .reescritura ? T("Reescrito", "Rewritten") : (registro.estilo == "Trabajo" ? T("Prompt listo", "Prompt ready") : T("Listo", "Done"))
             Cursor.pegar(texto) { [weak self] r in
                 guard let self else { return }
+                RegistroMemoria.anotarAlCerrado(["pegado": r == .entro ? "entro" : r == .noEntro ? "no entro" : "sin saber"])
                 if r == .noEntro {
                     // La app no lo tomó: a la vista y copiado, en vez de un "Listo" engañoso.
                     Motor.sonido("Basso")

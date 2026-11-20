@@ -55,19 +55,36 @@ enum Cursor {
         "AXOutline", "AXTable", "AXRow", "AXCell", "AXMenu", "AXMenuItem", "AXMenuBar", "AXSlider", "AXPopUpButton",
         "AXToolbar", "AXTabGroup", "AXDisclosureTriangle", "AXIncrementor", "AXColorWell", "AXLink"]
 
-    static func activarAccesibilidad(_ app: NSRunningApplication, _ axApp: AXUIElement) {
+    /// Le pide a la app que cuente lo que tiene adentro. Devuelve `true` si la lectura puede llegar vacía porque la app
+    /// recién está armando su árbol: Electron siempre (se le acaba de volver a pedir) y Chrome la primera vez.
+    /// A Electron se le vuelve a pedir en cada dictado (20/11/2026, Max Bot): Chromium apaga solo la accesibilidad
+    /// cuando cree que nadie la usa, y como se pedía una sola vez por proceso, después ya no contaba dónde estaba el cursor.
+    @discardableResult
+    static func activarAccesibilidad(_ app: NSRunningApplication, _ axApp: AXUIElement) -> Bool {
         let pid = app.processIdentifier
         candadoActivadas.lock()
         let nueva = activadas.insert(pid).inserted
         candadoActivadas.unlock()
-        guard nueva else { return }
         let esElectron = app.bundleURL.map {
             FileManager.default.fileExists(atPath: $0.appendingPathComponent("Contents/Frameworks/Electron Framework.framework").path)
         } ?? false
         if esElectron { AXUIElementSetAttributeValue(axApp, "AXManualAccessibility" as CFString, kCFBooleanTrue) }
-        if chromium.contains(app.bundleIdentifier ?? "") {
+        if nueva, chromium.contains(app.bundleIdentifier ?? "") {
             AXUIElementSetAttributeValue(axApp, "AXEnhancedUserInterface" as CFString, kCFBooleanTrue)
         }
+        return esElectron || (nueva && chromium.contains(app.bundleIdentifier ?? ""))
+    }
+
+    /// El elemento con el foco en la app. Si la accesibilidad se acaba de prender y no hay nada, espera hasta ~0,3 s a que
+    /// la app la arme (antes, el primer dictado después de abrir Max Bot o Slack no encontraba la caja).
+    private static func enfocado(_ axApp: AXUIElement, recienPrendida: Bool) -> AnyObject? {
+        if let el = atributo(axApp, kAXFocusedUIElementAttribute) { return el }
+        guard recienPrendida else { return nil }
+        for _ in 0..<6 {
+            Thread.sleep(forTimeInterval: 0.05)
+            if let el = atributo(axApp, kAXFocusedUIElementAttribute) { return el }
+        }
+        return nil
     }
 
     // Título de la ventana de adelante de una app (para reconocer pestañas de gestores de contraseñas).
@@ -120,11 +137,11 @@ enum Cursor {
             c.bundle = app.bundleIdentifier ?? ""
             let axApp = AXUIElementCreateApplication(app.processIdentifier)
             AXUIElementSetMessagingTimeout(axApp, 0.25)
-            activarAccesibilidad(app, axApp)
+            let recienPrendida = activarAccesibilidad(app, axApp)
+            enfocadoApp = enfocado(axApp, recienPrendida: recienPrendida)
             if let ventana = atributo(axApp, kAXFocusedWindowAttribute) {
                 c.ventana = atributo(ventana as! AXUIElement, kAXTitleAttribute) as? String ?? ""
             }
-            enfocadoApp = atributo(axApp, kAXFocusedUIElementAttribute)
         }
         let sistema = AXUIElementCreateSystemWide()
         AXUIElementSetMessagingTimeout(sistema, 0.25)

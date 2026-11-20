@@ -510,7 +510,7 @@ struct DatosAjustes: Codable, Equatable {
     var portapapelesActivo = true
     var estilo: Estilo = .automatico
     var appsTrabajo = ["Claude", "Terminal", "iTerm", "Warp", "Ghostty", "Cursor", "Code", "Codex", "ChatGPT",
-                       "Antigravity", "Orca", "Zed", "Xcode"] + DatosAjustes.nuevasTrabajo
+                       "Antigravity", "Orca", "Zed", "Xcode"] + DatosAjustes.nuevasTrabajo + DatosAjustes.nuevasTrabajo3
     var appsCorreo = ["Mail", "Outlook", "Spark", "Gmail", "Superhuman", "Airmail"] + DatosAjustes.nuevasCorreo
     var appsMensaje = ["WhatsApp", "Slack", "Telegram", "Mensajes", "Messages", "Discord", "Signal", "Teams"] + DatosAjustes.nuevasMensaje
     // Cifras en Automático (01/11/2026): planillas y programas de facturación, en la Mac o en el navegador (por el
@@ -524,10 +524,14 @@ struct DatosAjustes: Codable, Equatable {
     static let nuevasTrabajo = ["Windsurf", "Kiro", "Trae", "IntelliJ", "PyCharm", "WebStorm", "Android Studio", "Fleet",
                                 "Sublime Text", "kitty", "Alacritty", "WezTerm", "Tabby", "Gemini", "Grok", "Perplexity",
                                 "DeepSeek", "Copilot", "Lovable", "Replit"]
+    // 20/11/2026: Max Bot (un arnés de agentes de código, Electron) caía en Común. Su nombre en la Mac es «Max Bot»,
+    // con espacio.
+    static let nuevasTrabajo3 = ["Max Bot"]
     static let nuevasCorreo = ["Mimestream", "Proton Mail", "Thunderbird", "iCloud Mail", "Yahoo Mail"]
     static let nuevasMensaje = ["Messenger", "Beeper", "Google Chat", "Zoom", "Element", "Viber", "Skype", "WeChat"]
-    // 1: las listas de antes del 30/10. 2: con las apps nuevas. Sirve para sumarlas una sola vez a tus listas guardadas.
-    var listasApps = 2
+    // 1: las listas de antes del 30/10. 2: con las apps nuevas. 3: con Max Bot (20/11). Sirve para sumarlas una sola
+    // vez a tus listas guardadas.
+    var listasApps = 3
     var emojisMensaje = true                  // en modo Mensaje, la IA puede sumar uno o dos emojis que acompañen
     var instruccionesApp: [InstruccionApp] = []   // se eligen en Voz › Pasar en limpio (Ajustes.instruccionPara)
     var acciones: [AccionRapida] = AccionRapida.predeterminadas   // se eligen en Modos › Acciones rápidas
@@ -617,6 +621,7 @@ struct DatosAjustes: Codable, Equatable {
             appsCorreo = DatosAjustes.sumar(DatosAjustes.nuevasCorreo, a: appsCorreo)
             appsMensaje = DatosAjustes.sumar(DatosAjustes.nuevasMensaje, a: appsMensaje)
         }
+        if v(.listasApps, 1) < 3 { appsTrabajo = DatosAjustes.sumar(DatosAjustes.nuevasTrabajo3, a: appsTrabajo) }
         emojisMensaje = v(.emojisMensaje, emojisMensaje)
         instruccionesApp = v(.instruccionesApp, instruccionesApp)
         acciones = v(.acciones, acciones)
