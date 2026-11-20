@@ -217,7 +217,7 @@ final class Motor {
         // Solo si la IA lo va a usar: sin IA no sirve y la de Apple tiene poco lugar (y así no se gasta Vision).
         let iaUsaPantalla = ajustes.iaLista && d.proveedorIA != .apple && (d.limpiarConIA || estilo != .comun) && contexto?.secreto != true
         if a == .dictar && d.leerPantalla && d.mirarVentana && iaUsaPantalla, let pid = NSWorkspace.shared.frontmostApplication?.processIdentifier {
-            lecturaPantalla = Task.detached(priority: .utility) { await Pantalla.leer(pid: pid) }
+            lecturaPantalla = Task.detached(priority: .utility) { await AyudantePantalla.leer(pid: pid) }   // aparte: ver AyudantePantalla
         }
         do { try grabador.empezar(microfono: d.microfono) }
         catch {
@@ -1400,7 +1400,7 @@ final class Motor {
             var ventana = ""
             if p.seleccion.isEmpty, p.anterior == nil, datos.leerPantalla, datos.mirarVentana, let pid = p.pid,
                EnLaMac.hablaDeLoVisible(crudo) {
-                ventana = await Pantalla.leer(pid: pid, tope: 6000)
+                ventana = await AyudantePantalla.leer(pid: pid, tope: 6000)
             }
             // Sin barrera de copia: la respuesta no se pega sola, la ves primero en la ventanita.
             let r = try await Proveedores.completar(

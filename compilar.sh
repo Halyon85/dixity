@@ -62,13 +62,27 @@ codesign --force --options runtime "$SELLO" \
   --sign "$IDENTIDAD" "$APP"
 [[ "$IDENTIDAD" == "-" ]] && echo "Firmada con: firma local (ad-hoc)" || echo "Firmada con: $IDENTIDAD"
 du -sh "$APP"
+# La copia de build/ no queda anotada en macOS como una Dixity más: si no, el inicio de sesión o un "abrir con"
+# podían abrir esta en vez de la de Aplicaciones (pasó con Allegro; 18/11/2026).
+LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+"$LSREGISTER" -u "$PWD/$APP" 2>/dev/null || true
 
 if [[ "${1:-}" == "instalar" ]]; then
+  # A propósito: si en Aplicaciones está la versión publicada (la que se actualiza sola), no se pisa con una copia de
+  # prueba, que no busca actualizaciones. El 16/11 pasó y la Mac quedó días con una copia de prueba (18/11/2026).
+  INSTALADA=/Applications/Dixity.app/Contents/Info.plist
+  if [[ -z "${DIXITY_REEMPLAZAR_OFICIAL:-}" ]] && /usr/libexec/PlistBuddy -c "Print :SUFeedURL" "$INSTALADA" >/dev/null 2>&1; then
+    VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$INSTALADA")
+    echo "En Aplicaciones está la versión publicada $VERSION: no la reemplazo con esta copia de prueba (no se actualiza)."
+    echo "La de prueba quedó en $APP. Para reemplazarla igual: DIXITY_REEMPLAZAR_OFICIAL=1 ./compilar.sh instalar"
+    exit 1
+  fi
   pkill -x Dixity 2>/dev/null || true
   pkill -x Dicta 2>/dev/null || true      # versiones anteriores (Dicta / Dixis)
   sleep 1
   rm -rf /Applications/Dicta.app /Applications/Dixis.app /Applications/Dixity.app
   cp -R "$APP" /Applications/Dixity.app
+  "$LSREGISTER" -f /Applications/Dixity.app 2>/dev/null || true
   open /Applications/Dixity.app
   echo "Instalada en /Applications/Dixity.app"
 fi

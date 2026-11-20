@@ -30,6 +30,8 @@ enum Principal {
     static func main() {
         let app = NSApplication.shared
         Ajustes.soloLectura = CommandLine.arguments.dropFirst().contains { $0.hasPrefix("--") }
+        // El ayudante que lee la pantalla (lo abre la propia Dixity en cada dictado): lee, contesta y se cierra.
+        if CommandLine.arguments.contains(AyudantePantalla.argumento) { AyudantePantalla.correr(CommandLine.arguments) }
         // Los modos de prueba que usan tus permisos (pantalla, accesibilidad, micrófono) o tus claves preguntan antes:
         // cualquier programa podía abrir Dixity con ellos y leer tu pantalla, pegar texto o gastar tus claves sin que
         // te enteraras (auditoría de seguridad del 23/10/2026). Un programa no puede tocar el botón por vos.
